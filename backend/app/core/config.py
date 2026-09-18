@@ -65,10 +65,10 @@ class Settings(BaseSettings):
     AUTH_REDIRECT_URI: str | None = None  # Auto-computed if None
 
     # Firebase Authentication
-    FIREBASE_API_KEY: str | None = None
-    FIREBASE_AUTH_DOMAIN: str | None = None
-    FIREBASE_PROJECT_ID: str | None = None
-    FIREBASE_APP_ID: str | None = None
+    FIREBASE_API_KEY: str | None = "AIzaSyAxXgeFRRup1tVg8N-G97DA-MkO64T_YAg"
+    FIREBASE_AUTH_DOMAIN: str | None = "webarchiver-dcfcc.firebaseapp.com"
+    FIREBASE_PROJECT_ID: str | None = "webarchiver-dcfcc"
+    FIREBASE_APP_ID: str | None = "1:1042148192907:web:ce01dcdf341b11e4611a8e"
 
     model_config = {
         "env_file": ".env",

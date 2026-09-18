@@ -76,6 +76,8 @@ def get_firebase_config():
         "apiKey": settings.FIREBASE_API_KEY or "",
         "authDomain": auth_domain or "",
         "projectId": settings.FIREBASE_PROJECT_ID or "",
+        "storageBucket": "webarchiver-dcfcc.firebasestorage.app",
+        "messagingSenderId": "1042148192907",
         "appId": settings.FIREBASE_APP_ID or "",
     }
 
