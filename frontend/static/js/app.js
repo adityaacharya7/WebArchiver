@@ -104,16 +104,26 @@ async function loadStats() {
         const totalSubsEl = document.getElementById("stat-total-subs");
         if (totalSubsEl) totalSubsEl.textContent = data.submissions.total;
 
-        // Render service performance latency badges (Section 17)
+        // Populate Queue tab metrics ribbon if present
+        const qPendingEl = document.getElementById("queue-stat-pending");
+        if (qPendingEl) qPendingEl.textContent = data.queue.pending;
+        const qProgressEl = document.getElementById("queue-stat-progress");
+        if (qProgressEl) qProgressEl.textContent = data.queue.in_progress;
+        const qDoneEl = document.getElementById("queue-stat-done");
+        if (qDoneEl) qDoneEl.textContent = data.submissions.success;
+        const qFailedEl = document.getElementById("queue-stat-failed");
+        if (qFailedEl) qFailedEl.textContent = data.submissions.failed;
+
+        // Render service performance latency badges (Orbitronix sharp styling)
         const latencyContainer = document.getElementById("service-latency-container");
         if (latencyContainer && data.service_performance) {
             let latHtml = "";
             for (const [srv, perf] of Object.entries(data.service_performance)) {
                 latHtml += `
-                    <div style="font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 5px;">
-                        <span style="font-weight: 700; color: var(--accent-cyan);">${srv}:</span>
+                    <div style="font-size: 0.72rem; padding: 3px 8px; border-radius: 0; background: var(--surface-2); border: 1px solid var(--hairline-2); display: flex; align-items: center; gap: 5px;">
+                        <span style="font-weight: 700; color: var(--signal); font-family: var(--font-mono);">${srv.toUpperCase()}:</span>
                         <span>${perf.total} submitted</span>
-                        <span style="color: var(--text-muted);">•</span>
+                        <span style="color: var(--ink-dim);">•</span>
                         <span>avg ${perf.avg_latency_seconds}s</span>
                     </div>
                 `;
@@ -136,6 +146,7 @@ async function loadStats() {
         const pauseBtnIcon = document.getElementById("pause-resume-icon");
         const pauseBtnText = document.getElementById("pause-resume-text");
         const queuePauseText = document.getElementById("queue-tab-pause-text");
+        const queuePauseHeader = document.getElementById("queue-tab-pause-text-header");
 
         if (data.worker.paused) {
             pill.className = "worker-pill paused";
@@ -143,16 +154,29 @@ async function loadStats() {
             pauseBtnIcon.textContent = "▶";
             pauseBtnText.textContent = "Resume Queue";
             if (queuePauseText) queuePauseText.textContent = "Resume Workers";
+            if (queuePauseHeader) queuePauseHeader.textContent = "Resume Workers";
         } else {
             pill.className = "worker-pill";
             statusText.textContent = `Workers Active (${data.worker.processed_total} processed)`;
             pauseBtnIcon.textContent = "⏸";
             pauseBtnText.textContent = "Pause Queue";
             if (queuePauseText) queuePauseText.textContent = "Pause Workers";
+            if (queuePauseHeader) queuePauseHeader.textContent = "Pause Workers";
         }
     } catch (err) {
         console.error("Failed to load stats:", err);
     }
+}
+
+function filterDomainsList() {
+    const query = (document.getElementById("domains-search-input")?.value || "").toLowerCase().trim();
+    const rows = document.querySelectorAll("#domains-full-table-body tr");
+    rows.forEach(row => {
+        const domainCell = row.children[1];
+        if (!domainCell || row.classList.contains("empty-state")) return;
+        const text = domainCell.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? "" : "none";
+    });
 }
 
 /* ================= Worker Pause / Resume ================= */

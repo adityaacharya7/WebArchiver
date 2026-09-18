@@ -213,6 +213,23 @@
 
         <!-- ================= TAB 1: EXECUTIVE DASHBOARD ================= -->
         <main class="tab-content active" id="tab-overview">
+            <!-- Tab Deck Header -->
+            <div class="ox-deck-header ox-bracket">
+                <div class="deck-info">
+                    <div class="deck-eyebrow">
+                        <span class="ox-reg"></span>
+                        <span class="ox-micro">DECK // 01 · SYSTEM TELEMETRY</span>
+                    </div>
+                    <h2 class="deck-title">EXECUTIVE <span class="ox-editorial-i" style="color: var(--ink-muted);">DASHBOARD</span></h2>
+                    <p class="deck-desc">Multi-tenant telemetry overview, real-time submission rates, and domain discovery health</p>
+                </div>
+                <div class="deck-actions">
+                    <button class="btn btn-sm btn-outline" onclick="loadStats()">
+                        <span>↻ Refresh Telemetry</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Metrics Cards Grid (Orbitronix MetricCard Primitives) -->
             <section class="metrics-grid">
                 <div class="metric-card card-cyan ox-bracket">
@@ -338,10 +355,27 @@
 
         <!-- ================= TAB 2: DOMAINS & CRAWLING ================= -->
         <div class="tab-content" id="tab-domains">
+            <!-- Tab Deck Header -->
+            <div class="ox-deck-header ox-bracket">
+                <div class="deck-info">
+                    <div class="deck-eyebrow">
+                        <span class="ox-reg"></span>
+                        <span class="ox-micro">DECK // 02 · DISCOVERY &amp; INVENTORY</span>
+                    </div>
+                    <h2 class="deck-title">TARGET DOMAINS <span class="ox-editorial-i" style="color: var(--ink-muted);">&amp; CRAWLING</span></h2>
+                    <p class="deck-desc">Autonomous multi-source discovery (Robots.txt, Sitemap.xml, RSS Feeds, HTML Crawler)</p>
+                </div>
+                <div class="deck-actions">
+                    <button class="btn btn-sm btn-secondary" id="btn-enqueue-all" onclick="enqueueAllDomains()">
+                        <span>⚡ Enqueue All Domains</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Add Domain Panel -->
             <section class="panel form-panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 04 ]</span>
+                    <span class="rule-index">[ 01 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Add New Target Domain</h2>
                     <span class="ox-rule-glyph"></span>
@@ -399,14 +433,24 @@
             <!-- Domains Inventory Table Panel -->
             <section class="panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 05 ]</span>
+                    <span class="rule-index">[ 02 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Configured Target Domains</h2>
                     <span class="ox-rule-glyph"></span>
-                    <button class="btn btn-sm btn-secondary" id="btn-enqueue-all" onclick="enqueueAllDomains()">
-                        <span>⚡ Enqueue All Domains (Combined Queue)</span>
-                    </button>
+                    <span class="panel-badge">INVENTORY DECK</span>
                 </div>
+
+                <!-- Domains Search Toolbar -->
+                <div class="filter-toolbar">
+                    <div class="search-input-group flex-2">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="domains-search-input" placeholder="Filter domains by name..." oninput="filterDomainsList()">
+                    </div>
+                    <div class="panel-actions" style="display: flex; gap: 8px; margin-left: auto;">
+                        <button class="btn btn-sm btn-outline" onclick="loadDomains()">Refresh Domains</button>
+                    </div>
+                </div>
+
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -431,16 +475,29 @@
 
         <!-- ================= TAB 3: SEARCH & REPOSITORY ================= -->
         <div class="tab-content" id="tab-repository">
+            <!-- Tab Deck Header -->
+            <div class="ox-deck-header ox-bracket">
+                <div class="deck-info">
+                    <div class="deck-eyebrow">
+                        <span class="ox-reg"></span>
+                        <span class="ox-micro">DECK // 03 · CANONICAL REPOSITORY</span>
+                    </div>
+                    <h2 class="deck-title">SEARCH &amp; <span class="ox-editorial-i" style="color: var(--ink-muted);">REPOSITORY</span></h2>
+                    <p class="deck-desc">Deduplicated canonical URL inventory, live availability checks, and audit history</p>
+                </div>
+                <div class="deck-actions">
+                    <button class="btn btn-sm btn-outline" onclick="exportData('csv')">Export CSV</button>
+                    <button class="btn btn-sm btn-outline" onclick="exportData('json')">Export JSON</button>
+                </div>
+            </div>
+
             <section class="panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 06 ]</span>
+                    <span class="rule-index">[ 01 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Archival Repository Explorer</h2>
                     <span class="ox-rule-glyph"></span>
-                    <div class="panel-actions" style="display: flex; gap: 8px;">
-                        <button class="btn btn-sm btn-outline" onclick="exportData('csv')">Export CSV</button>
-                        <button class="btn btn-sm btn-outline" onclick="exportData('json')">Export JSON</button>
-                    </div>
+                    <span class="panel-badge">AUDIT &amp; RETRIEVAL</span>
                 </div>
 
                 <!-- Search & Filters Toolbar -->
@@ -520,20 +577,104 @@
 
         <!-- ================= TAB 4: LIVE SUBMISSION QUEUE ================= -->
         <div class="tab-content" id="tab-queue">
+            <!-- Tab Deck Header -->
+            <div class="ox-deck-header ox-bracket">
+                <div class="deck-info">
+                    <div class="deck-eyebrow">
+                        <span class="ox-reg"></span>
+                        <span class="ox-micro">DECK // 04 · PERSISTENT PIPELINE</span>
+                    </div>
+                    <h2 class="deck-title">LIVE SUBMISSION <span class="ox-editorial-i" style="color: var(--ink-muted);">QUEUE</span></h2>
+                    <p class="deck-desc">Crash-resilient token bucket worker pool submitting to Wayback SPN2 and Archive.today</p>
+                </div>
+                <div class="deck-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="retryFailedItems()">Retry DLQ</button>
+                    <button class="btn btn-sm btn-primary" onclick="toggleWorkerPause()">
+                        <span id="queue-tab-pause-text-header">Pause Workers</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Queue Telemetry Metrics Grid -->
+            <section class="metrics-grid">
+                <div class="metric-card card-amber ox-bracket">
+                    <span class="card-index-tag">01</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Queue Pending</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="queue-stat-pending">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer">Waiting for submission</div>
+                </div>
+
+                <div class="metric-card card-cyan ox-bracket">
+                    <span class="card-index-tag">02</span>
+                    <div class="metric-header">
+                        <span class="metric-label">In Progress</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="queue-stat-progress">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer">Active worker leases</div>
+                </div>
+
+                <div class="metric-card card-green ox-bracket">
+                    <span class="card-index-tag">03</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Archived (Done)</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="queue-stat-done">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer">Snapshot confirmed</div>
+                </div>
+
+                <div class="metric-card card-rose ox-bracket">
+                    <span class="card-index-tag">04</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Dead Letter (DLQ)</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="queue-stat-failed">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer">Max retries exceeded</div>
+                </div>
+
+                <div class="metric-card card-purple ox-bracket">
+                    <span class="card-index-tag">05</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Rate Limiter</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" style="font-size: 1.55rem; line-height: 1.4;">15 REQ/M</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer">Token bucket active</div>
+                </div>
+            </section>
+
             <section class="panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 07 ]</span>
+                    <span class="rule-index">[ 01 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Persistent Submission Queue</h2>
                     <span class="ox-rule-glyph"></span>
-                    <div class="panel-actions" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                        <select id="queue-filter-status" onchange="loadQueueItems()" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: var(--ground-deep); border: 1px solid var(--hairline-2); color: var(--ink-strong);">
+                    <span class="panel-badge">RECOVERY ARMED</span>
+                </div>
+
+                <!-- Queue Filter Toolbar -->
+                <div class="filter-toolbar">
+                    <div class="form-group flex-2">
+                        <label for="queue-filter-status" class="ox-micro">Filter Queue Status</label>
+                        <select id="queue-filter-status" onchange="loadQueueItems()">
                             <option value="">All Queue Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="done">Done</option>
+                            <option value="pending">Pending Queue</option>
+                            <option value="in_progress">In Progress (Active Leases)</option>
+                            <option value="done">Completed (Preserved)</option>
                             <option value="failed_permanent">Dead Letter Queue (DLQ)</option>
                         </select>
+                    </div>
+                    <div class="panel-actions" style="display: flex; gap: 8px; margin-left: auto; align-items: flex-end;">
                         <button class="btn btn-sm btn-outline" onclick="loadQueueItems()">Refresh</button>
                         <button class="btn btn-sm btn-secondary" onclick="retryFailedItems()">Retry DLQ</button>
                         <button class="btn btn-sm btn-primary" onclick="toggleWorkerPause()">
@@ -566,10 +707,27 @@
 
         <!-- ================= TAB 5: BONUS CENTER ================= -->
         <div class="tab-content" id="tab-bonus">
+            <!-- Tab Deck Header -->
+            <div class="ox-deck-header ox-bracket">
+                <div class="deck-info">
+                    <div class="deck-eyebrow">
+                        <span class="ox-reg"></span>
+                        <span class="ox-micro">DECK // 05 · ADVANCED PIPELINE SUITE</span>
+                    </div>
+                    <h2 class="deck-title">BONUS <span class="ox-editorial-i" style="color: var(--ink-muted);">CENTER</span></h2>
+                    <p class="deck-desc">Headless Playwright DOM extraction, Unified HTML diff inspection, and APScheduler recurring jobs</p>
+                </div>
+                <div class="deck-actions">
+                    <button class="btn btn-sm btn-outline" onclick="loadSchedules()">
+                        <span>↻ Refresh Schedules</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Bonus 1: Playwright Dynamic DOM / Instagram Archival -->
             <section class="panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 08 ]</span>
+                    <span class="rule-index">[ 01 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Dynamic DOM &amp; Headless Extraction</h2>
                     <span class="ox-rule-glyph"></span>
@@ -600,23 +758,23 @@
             <!-- Bonus 2: Snapshot Diff Inspector -->
             <section class="panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 09 ]</span>
+                    <span class="rule-index">[ 02 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Snapshot Content &amp; HTML Diff Comparison</h2>
                     <span class="ox-rule-glyph"></span>
                     <span class="rule-note">UNIFIED DIFF ENGINE</span>
                 </div>
-                <div class="diff-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="diff-grid-layout">
                     <div class="form-group">
                         <label>Snapshot A (Original Baseline):</label>
-                        <textarea id="diff-text-a" rows="6" placeholder="Paste initial HTML or text content here..." style="background: var(--ground-deep); border: 1px solid var(--hairline-2); color: var(--ink-max); font-family: var(--font-mono); font-size: 11px; padding: 0.6rem; width: 100%;"></textarea>
+                        <textarea class="diff-textarea-field" id="diff-text-a" rows="6" placeholder="Paste initial HTML or text content here..."></textarea>
                     </div>
                     <div class="form-group">
                         <label>Snapshot B (Updated Version):</label>
-                        <textarea id="diff-text-b" rows="6" placeholder="Paste updated HTML or text content here..." style="background: var(--ground-deep); border: 1px solid var(--hairline-2); color: var(--ink-max); font-family: var(--font-mono); font-size: 11px; padding: 0.6rem; width: 100%;"></textarea>
+                        <textarea class="diff-textarea-field" id="diff-text-b" rows="6" placeholder="Paste updated HTML or text content here..."></textarea>
                     </div>
                 </div>
-                <div class="form-actions" style="display: flex; gap: 0.75rem;">
+                <div class="form-actions">
                     <button class="btn btn-secondary" onclick="runSnapshotDiff()">Compute Unified Diff</button>
                     <button type="button" class="btn btn-outline" onclick="loadSampleDiff()">Load Sample Changed HTML</button>
                 </div>
@@ -629,7 +787,7 @@
             <!-- Bonus 3: Automated Recurring Schedules -->
             <section class="panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 10 ]</span>
+                    <span class="rule-index">[ 03 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Scheduled Recurring Domain Scans</h2>
                     <span class="ox-rule-glyph"></span>
@@ -678,16 +836,31 @@
 
         <!-- ================= TAB 6: SECTION 19 DEMONSTRATION GUIDE ================= -->
         <div class="tab-content" id="tab-demo">
+            <!-- Tab Deck Header -->
+            <div class="ox-deck-header ox-bracket">
+                <div class="deck-info">
+                    <div class="deck-eyebrow">
+                        <span class="ox-reg"></span>
+                        <span class="ox-micro">DECK // 06 · COMPLIANCE &amp; EVALUATION</span>
+                    </div>
+                    <h2 class="deck-title">SECTION 19 <span class="ox-editorial-i" style="color: var(--ink-muted);">DEMO SUITE</span></h2>
+                    <p class="deck-desc">10-step mandatory demonstration audit validating all core grading requirements</p>
+                </div>
+                <div class="deck-actions">
+                    <span class="panel-badge">10 AUDIT STEPS ARMED</span>
+                </div>
+            </div>
+
             <section class="panel ox-bracket">
                 <div class="section-rule">
-                    <span class="rule-index">[ 11 ]</span>
+                    <span class="rule-index">[ 01 ]</span>
                     <span class="ox-reg"></span>
                     <h2 class="rule-title">Section 19: Mandatory Demonstration Suite</h2>
                     <span class="ox-rule-glyph"></span>
                     <span class="rule-note">10-STEP EVALUATION AUDIT</span>
                 </div>
 
-                <div class="demo-checklist">
+                <div class="demo-checklist demo-grid">
                     <div class="demo-step-card ox-bracket" id="step-card-1">
                         <div class="step-num">01</div>
                         <div class="step-info">
