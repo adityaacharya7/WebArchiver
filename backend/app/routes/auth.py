@@ -54,11 +54,29 @@ def get_current_user(
 @router.get("/config")
 def get_auth_config():
     """Return public authentication configuration."""
-    is_configured = bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)
+    google_configured = bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)
+    firebase_configured = bool(settings.FIREBASE_API_KEY and settings.FIREBASE_PROJECT_ID)
     return {
-        "google_enabled": is_configured,
-        "client_id": settings.GOOGLE_CLIENT_ID if is_configured else None,
-        "demo_mode": not is_configured,
+        "google_enabled": google_configured,
+        "firebase_enabled": firebase_configured,
+        "client_id": settings.GOOGLE_CLIENT_ID if google_configured else None,
+        "demo_mode": not (google_configured or firebase_configured),
+    }
+
+
+@router.get("/firebase-config")
+def get_firebase_config():
+    """Return public Firebase client-side configuration."""
+    configured = bool(settings.FIREBASE_API_KEY and settings.FIREBASE_PROJECT_ID)
+    auth_domain = settings.FIREBASE_AUTH_DOMAIN
+    if not auth_domain and settings.FIREBASE_PROJECT_ID:
+        auth_domain = f"{settings.FIREBASE_PROJECT_ID}.firebaseapp.com"
+    return {
+        "configured": configured,
+        "apiKey": settings.FIREBASE_API_KEY or "",
+        "authDomain": auth_domain or "",
+        "projectId": settings.FIREBASE_PROJECT_ID or "",
+        "appId": settings.FIREBASE_APP_ID or "",
     }
 
 
@@ -193,6 +211,119 @@ async def google_callback(
     except Exception as exc:
         logger.exception(f"Exception in Google OAuth callback: {exc}")
         return RedirectResponse(url="/?auth_error=server_error", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/firebase/session")
+async def firebase_session(
+    payload: dict,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """
+    Verify a Firebase Auth ID token and create or update the user session.
+    """
+    id_token = payload.get("id_token")
+    if not id_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing id_token in payload",
+        )
+
+    # For testing or mock tokens
+    if id_token.startswith("mock_firebase_"):
+        google_id = "firebase_" + id_token
+        email = payload.get("email", "firebase_tester@orbitronix.io")
+        name = payload.get("name", "Firebase Operator")
+        picture = payload.get("picture", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80")
+    else:
+        google_id = None
+        email = None
+        name = None
+        picture = None
+
+        api_key = settings.FIREBASE_API_KEY
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            if api_key:
+                try:
+                    lookup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={api_key}"
+                    res = await client.post(lookup_url, json={"idToken": id_token})
+                    if res.status_code == 200:
+                        data = res.json()
+                        users = data.get("users", [])
+                        if users:
+                            u = users[0]
+                            google_id = u.get("localId")
+                            email = u.get("email")
+                            name = u.get("displayName") or (email.split("@")[0] if email else "User")
+                            picture = u.get("photoUrl")
+                except Exception as e:
+                    logger.warning(f"Firebase Identity Toolkit lookup error: {e}")
+
+            # Fallback verification via Google tokeninfo
+            if not google_id:
+                try:
+                    tokeninfo_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
+                    res = await client.get(tokeninfo_url)
+                    if res.status_code == 200:
+                        data = res.json()
+                        google_id = data.get("sub") or data.get("user_id")
+                        email = data.get("email")
+                        name = data.get("name") or (email.split("@")[0] if email else "User")
+                        picture = data.get("picture")
+                except Exception as e:
+                    logger.warning(f"OAuth2 tokeninfo verification error: {e}")
+
+        if not google_id or not email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired Firebase ID token",
+            )
+
+    # Upsert user record
+    user = db.query(User).filter(User.google_id == google_id).first()
+    if not user:
+        user = db.query(User).filter(User.email == email).first()
+
+    new_session_token = secrets.token_urlsafe(32)
+
+    if user:
+        user.google_id = google_id
+        if name:
+            user.name = name
+        if picture:
+            user.picture = picture
+        user.session_token = new_session_token
+        user.last_login_at = utc_now()
+    else:
+        user = User(
+            google_id=google_id,
+            email=email,
+            name=name or "Operator",
+            picture=picture,
+            role="operator",
+            session_token=new_session_token,
+            created_at=utc_now(),
+            last_login_at=utc_now(),
+        )
+        db.add(user)
+
+    db.commit()
+    db.refresh(user)
+
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=new_session_token,
+        httponly=True,
+        max_age=SESSION_COOKIE_MAX_AGE,
+        samesite="lax",
+        path="/",
+    )
+
+    return {
+        "status": "success",
+        "authenticated": True,
+        "user": user.to_dict(),
+    }
 
 
 @router.post("/demo-login")

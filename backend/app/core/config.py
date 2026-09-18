@@ -64,6 +64,12 @@ class Settings(BaseSettings):
     SESSION_SECRET_KEY: str = "orbitronix-super-secure-archival-session-secret-key-32b"
     AUTH_REDIRECT_URI: str | None = None  # Auto-computed if None
 
+    # Firebase Authentication
+    FIREBASE_API_KEY: str | None = None
+    FIREBASE_AUTH_DOMAIN: str | None = None
+    FIREBASE_PROJECT_ID: str | None = None
+    FIREBASE_APP_ID: str | None = None
+
     model_config = {
         "env_file": ".env",
         "extra": "allow",

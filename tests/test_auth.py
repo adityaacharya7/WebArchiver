@@ -121,3 +121,36 @@ def test_google_login_redirect_with_configured_credentials(client):
     # Clean up settings
     settings.GOOGLE_CLIENT_ID = None
     settings.GOOGLE_CLIENT_SECRET = None
+
+
+def test_firebase_config_endpoint(client):
+    """Verify /api/auth/firebase-config returns config schema."""
+    response = client.get("/api/auth/firebase-config")
+    assert response.status_code == 200
+    data = response.json()
+    assert "configured" in data
+    assert "apiKey" in data
+    assert "projectId" in data
+
+
+def test_firebase_session_endpoint(client):
+    """Verify /api/auth/firebase/session accepts mock Firebase token, creates user, and logs in."""
+    resp = client.post(
+        "/api/auth/firebase/session",
+        json={
+            "id_token": "mock_firebase_token_abc123",
+            "email": "sarah.connor@cyberdyne.org",
+            "name": "Sarah Connor",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["authenticated"] is True
+    assert data["user"]["email"] == "sarah.connor@cyberdyne.org"
+    assert data["user"]["name"] == "Sarah Connor"
+    assert "archiver_session" in resp.cookies
+
+    # Verify session persists on /api/auth/me
+    me_resp = client.get("/api/auth/me")
+    assert me_resp.status_code == 200
+    assert me_resp.json()["user"]["email"] == "sarah.connor@cyberdyne.org"

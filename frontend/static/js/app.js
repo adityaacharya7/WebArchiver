@@ -983,29 +983,56 @@ function escapeHtml(str) {
         .replace(/'/g, "&#039;");
 }
 
-/* ================= Google Authentication & User Profile ================= */
+/* ================= Firebase Authentication & User Profile ================= */
 let currentUser = null;
 let authConfig = null;
+let firebaseInitialized = false;
 
 async function initAuth() {
     checkUrlAuthParams();
+    await initFirebase();
     await loadAuthConfig();
     await checkAuthStatus();
+}
+
+async function initFirebase() {
+    try {
+        const res = await fetch("/api/auth/firebase-config");
+        if (!res.ok) return;
+        const config = await res.json();
+        if (config.configured && window.firebase) {
+            if (!firebase.apps.length) {
+                firebase.initializeApp({
+                    apiKey: config.apiKey,
+                    authDomain: config.authDomain,
+                    projectId: config.projectId,
+                    appId: config.appId,
+                });
+            }
+            firebaseInitialized = true;
+            const statusEl = document.getElementById("google-config-status");
+            if (statusEl) {
+                statusEl.innerHTML = `<span style="color: #10b981;">● Firebase Armed (${config.projectId})</span>`;
+            }
+        } else {
+            const statusEl = document.getElementById("google-config-status");
+            if (statusEl) {
+                statusEl.innerHTML = '<span>⚙️ Firebase keys not set in .env. Use <strong>Demo Mode</strong> or add FIREBASE_API_KEY</span>';
+            }
+        }
+    } catch (err) {
+        console.warn("Firebase initialization check:", err);
+    }
 }
 
 function checkUrlAuthParams() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("auth_success")) {
-        showToast("Google Authentication successful! Welcome to Mission Control.", "success");
+        showToast("Authentication successful! Welcome to Mission Control.", "success");
         window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.get("auth_error")) {
         const err = urlParams.get("auth_error");
-        if (err === "google_credentials_missing") {
-            showToast("Google OAuth credentials missing in .env. Use One-Click Demo Mode below!", "info");
-            openAuthModal();
-        } else {
-            showToast(`Authentication failed: ${err}`, "failed");
-        }
+        showToast(`Authentication issue: ${err}`, "failed");
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
@@ -1015,15 +1042,6 @@ async function loadAuthConfig() {
         const res = await fetch("/api/auth/config");
         if (res.ok) {
             authConfig = await res.json();
-            const statusEl = document.getElementById("google-config-status");
-            const actionBtn = document.getElementById("btn-google-login-action");
-            if (statusEl) {
-                if (authConfig.google_enabled) {
-                    statusEl.innerHTML = '<span style="color: #10b981;">● Google Cloud OAuth 2.0 Armed &amp; Active</span>';
-                } else {
-                    statusEl.innerHTML = '<span>⚙️ Google keys not set in .env. Use <strong>Demo Mode</strong> or configure GOOGLE_CLIENT_ID</span>';
-                }
-            }
         }
     } catch (e) {
         console.warn("Could not load auth configuration:", e);
@@ -1087,6 +1105,43 @@ function closeAuthModal() {
     if (modal) modal.style.display = "none";
 }
 
+async function signInWithGoogleFirebase() {
+    if (!firebaseInitialized) {
+        showToast("Firebase is not configured in .env yet. Use the One-Click Demo Mode below!", "info");
+        return;
+    }
+    try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        showToast("Opening Google Sign-In via Firebase...", "info");
+        const result = await firebase.auth().signInWithPopup(provider);
+        const idToken = await result.user.getIdToken();
+
+        const res = await fetch("/api/auth/firebase/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id_token: idToken }),
+        });
+
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.detail || "Server session verification failed");
+        }
+
+        const data = await res.json();
+        currentUser = data.user;
+        updateAuthUI(currentUser);
+        closeAuthModal();
+        showToast(`Welcome, ${currentUser.name}! Authenticated via Firebase.`, "success");
+    } catch (err) {
+        if (err.code === "auth/popup-closed-by-user") {
+            showToast("Google Sign-In cancelled.", "info");
+        } else {
+            showToast("Firebase Error: " + err.message, "failed");
+        }
+    }
+}
+
 async function loginDemoUser() {
     try {
         const res = await fetch("/api/auth/demo-login", {
@@ -1106,6 +1161,9 @@ async function loginDemoUser() {
 
 async function logoutUser() {
     try {
+        if (window.firebase && firebase.apps && firebase.apps.length) {
+            await firebase.auth().signOut().catch(() => {});
+        }
         const res = await fetch("/api/auth/logout", { method: "POST" });
         if (res.ok) {
             currentUser = null;
