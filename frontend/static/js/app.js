@@ -454,8 +454,12 @@ async function loadRepositoryUrls(page = 1) {
 
         const tbody = document.getElementById("repo-urls-body");
         if (data.items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No matching URLs found.</td></tr>';
-            document.getElementById("repo-page-info").textContent = "Page 0 of 0";
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="padding: 3rem 1rem;"><div style="font-size: 1.6rem; margin-bottom: 8px;">🔍</div><div style="font-weight: 600; color: var(--ink-max);">No matching URLs found.</div><div style="font-size: 0.8rem; color: var(--ink-muted); margin-top: 4px;">Register a domain or run a crawl in Tab 2 to populate the repository.</div></td></tr>';
+            document.getElementById("repo-page-info").textContent = "0 Records (Empty Repository)";
+            const prevBtn = document.getElementById("btn-prev-page");
+            const nextBtn = document.getElementById("btn-next-page");
+            if (prevBtn) prevBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = true;
             return;
         }
 
