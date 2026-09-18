@@ -1636,7 +1636,7 @@ body::after {
     color: var(--ink-muted, #94a3b8);
     cursor: pointer;
     padding: 4px;
-    border-radius: 4px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1650,273 +1650,145 @@ body::after {
 
 .demo-auth-box {
     padding: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.15));
-    border-radius: 6px;
+    background: var(--surface);
+    border: 1px dashed var(--hairline-2);
+    border-radius: 0;
     margin-top: 12px;
 }
 
-/* ================= DEDICATED ORBITRONIX SIGN-IN GATEWAY ================= */
-.auth-gate-screen {
-    min-height: calc(100vh - 36px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 20px;
+/* ── Orbitronix Telemetry Authentication Gate Deck ─────────────────────── */
+.ox-auth-deck {
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    padding: 0;
+    margin-bottom: 2rem;
     position: relative;
-    overflow: hidden;
-    background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.1) 0%, rgba(10, 15, 29, 0.98) 75%), #060913;
+    border-radius: 0;
 }
 
-.auth-gate-backdrop {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-}
-
-.auth-gate-glow-top {
-    position: absolute;
-    top: -140px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 680px;
-    height: 380px;
-    background: radial-gradient(ellipse, rgba(56, 189, 248, 0.16), transparent 70%);
-    filter: blur(60px);
-}
-
-.auth-gate-glow-bottom {
-    position: absolute;
-    bottom: -120px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 580px;
-    height: 340px;
-    background: radial-gradient(ellipse, rgba(99, 102, 241, 0.14), transparent 70%);
-    filter: blur(70px);
-}
-
-.auth-gate-card {
-    position: relative;
-    z-index: 10;
-    width: 100%;
-    max-width: 580px;
-    background: rgba(13, 19, 36, 0.92);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 12px;
-    padding: 44px 38px 32px 38px;
-    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.75), 0 0 40px rgba(99, 102, 241, 0.12);
-    text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.auth-gate-watermark {
-    position: absolute;
-    top: 20px;
-    right: 24px;
-    font-family: var(--font-mono, monospace);
-    font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.12);
-    letter-spacing: 0.22em;
-    font-weight: 700;
-    pointer-events: none;
-}
-
-.auth-gate-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 24px;
-}
-
-.auth-gate-title {
-    font-family: var(--font-display, 'Archivo', sans-serif);
-    font-size: 1.95rem;
-    font-weight: 700;
-    color: var(--ink-max, #ffffff);
-    letter-spacing: -0.02em;
-    margin-top: 10px;
-    margin-bottom: 6px;
-    line-height: 1.15;
-}
-
-.auth-gate-subtitle {
-    font-size: 0.88rem;
-    color: var(--ink-muted, #94a3b8);
-    max-width: 440px;
-    margin: 0 auto;
-    line-height: 1.45;
-}
-
-.auth-gate-notice {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px solid rgba(99, 102, 241, 0.28);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 26px;
-    text-align: left;
-}
-
-.auth-notice-icon {
-    font-size: 1.35rem;
-    line-height: 1;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.auth-notice-text strong {
-    display: block;
-    font-family: var(--font-mono, monospace);
-    font-size: 0.74rem;
-    color: #a5b4fc;
-    letter-spacing: 0.06em;
-    margin-bottom: 4px;
-}
-
-.auth-notice-text span {
-    font-size: 0.82rem;
-    color: var(--ink-muted, #cbd5e1);
-    line-height: 1.45;
-}
-
-.auth-gate-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 24px;
-}
-
-.btn-gate-google {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    background: #ffffff;
-    color: #1e293b;
-    font-size: 1.02rem;
-    font-weight: 600;
-    padding: 13px 24px;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(66, 133, 244, 0.25);
-    width: 100%;
-}
-
-.btn-gate-google:hover {
-    background: #f8fafc;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(66, 133, 244, 0.4);
-}
-
-.auth-gate-divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 4px 0;
-    color: rgba(255, 255, 255, 0.3);
-    font-family: var(--font-mono, monospace);
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
-}
-
-.auth-gate-divider::before,
-.auth-gate-divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.auth-gate-divider span {
-    padding: 0 12px;
-}
-
-.btn-gate-demo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    background: rgba(99, 102, 241, 0.12);
-    color: #c7d2fe;
-    border: 1px solid rgba(99, 102, 241, 0.35);
-    padding: 12px 20px;
-    font-size: 0.92rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    width: 100%;
-}
-
-.btn-gate-demo:hover {
-    background: rgba(99, 102, 241, 0.24);
-    border-color: rgba(99, 102, 241, 0.65);
-    color: #ffffff;
-    transform: translateY(-1px);
-}
-
-.gate-bolt {
-    color: #fbbf24;
-    font-size: 1.15rem;
-}
-
-.auth-gate-features {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 22px;
-}
-
-.gate-feat-pill {
-    font-family: var(--font-mono, monospace);
-    font-size: 0.72rem;
-    color: var(--ink-muted, #94a3b8);
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 5px 10px;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.feat-bullet {
-    color: var(--brand-accent, #6366f1);
-    font-size: 0.65rem;
-}
-
-.auth-gate-footer {
+.ox-deck-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding-top: 14px;
-    font-size: 0.72rem;
-    color: var(--ink-muted, #64748b);
+    padding: 0.75rem 1.25rem;
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--hairline);
 }
 
-@media (max-width: 640px) {
-    .auth-gate-screen {
-        padding: 24px 14px;
+.ox-deck-toolbar .deck-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ox-auth-deck-hero {
+    padding: 3.5rem 2rem 3rem 2rem;
+    text-align: center;
+    max-width: 820px;
+    margin: 0 auto;
+}
+
+.ox-auth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-3);
+    border: 1px solid var(--hairline-2);
+    padding: 0.35rem 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.ox-auth-title {
+    font-size: 2.85rem;
+    line-height: 1.05;
+    margin-bottom: 1rem;
+    color: var(--ink-max);
+}
+
+.ox-auth-desc {
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+    color: var(--ink-body);
+    line-height: 1.6;
+    margin-bottom: 2.25rem;
+    max-width: 620px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ox-auth-telemetry-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 2.25rem;
+    text-align: left;
+}
+
+.ox-telemetry-panel {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-radius: 0;
+}
+
+.ox-telemetry-data {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ink-max);
+}
+
+.ox-auth-control-box {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 460px;
+    margin: 0 auto;
+}
+
+.ox-btn-large {
+    width: 100%;
+    padding: 0.85rem 1.4rem;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    border-radius: 0;
+}
+
+.ox-auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0;
+}
+
+.ox-auth-deck-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: var(--surface-3);
+    border-top: 1px solid var(--hairline);
+}
+
+.ox-footer-telemetry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .ox-auth-telemetry-row {
+        grid-template-columns: 1fr;
     }
-    .auth-gate-card {
-        padding: 30px 18px 24px 18px;
+    .ox-auth-title {
+        font-size: 2rem;
     }
-    .auth-gate-title {
-        font-size: 1.55rem;
-    }
-    .auth-gate-watermark {
-        display: none;
-    }
-    .auth-gate-features {
-        display: none;
+    .ox-auth-deck-hero {
+        padding: 2rem 1rem;
     }
 }
 

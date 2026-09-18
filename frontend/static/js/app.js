@@ -1089,12 +1089,12 @@ function updateAuthUI(user) {
     const loginBtn = document.getElementById("btn-google-auth");
     const profileChip = document.getElementById("user-profile-chip");
     const authGateScreen = document.getElementById("auth-gate-screen");
-    const appContainer = document.getElementById("app-container");
+    const authenticatedDeck = document.getElementById("authenticated-deck");
 
     if (user) {
         // Hide sign-in gate, reveal Mission Control deck
         if (authGateScreen) authGateScreen.style.display = "none";
-        if (appContainer) appContainer.style.display = "block";
+        if (authenticatedDeck) authenticatedDeck.style.display = "block";
 
         if (loginBtn) loginBtn.style.display = "none";
         if (profileChip) {
@@ -1118,9 +1118,9 @@ function updateAuthUI(user) {
         loadRepositoryUrls(1);
         loadSchedules();
     } else {
-        // Show dedicated sign-in gate, lock Mission Control deck
-        if (authGateScreen) authGateScreen.style.display = "flex";
-        if (appContainer) appContainer.style.display = "none";
+        // Show dedicated Orbitronix sign-in gate deck, lock Mission Control tabs
+        if (authGateScreen) authGateScreen.style.display = "block";
+        if (authenticatedDeck) authenticatedDeck.style.display = "none";
 
         if (loginBtn) loginBtn.style.display = "inline-flex";
         if (profileChip) profileChip.style.display = "none";
