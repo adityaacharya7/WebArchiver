@@ -1090,11 +1090,13 @@ function updateAuthUI(user) {
     const profileChip = document.getElementById("user-profile-chip");
     const authGateScreen = document.getElementById("auth-gate-screen");
     const authenticatedDeck = document.getElementById("authenticated-deck");
+    const navControls = document.getElementById("nav-controls");
 
     if (user) {
-        // Hide sign-in gate, reveal Mission Control deck
+        // Hide sign-in gate, reveal Mission Control deck & top bar controls
         if (authGateScreen) authGateScreen.style.display = "none";
         if (authenticatedDeck) authenticatedDeck.style.display = "block";
+        if (navControls) navControls.style.display = "flex";
 
         if (loginBtn) loginBtn.style.display = "none";
         if (profileChip) {
@@ -1121,8 +1123,10 @@ function updateAuthUI(user) {
         // Show dedicated Orbitronix sign-in gate deck, lock Mission Control tabs
         if (authGateScreen) authGateScreen.style.display = "block";
         if (authenticatedDeck) authenticatedDeck.style.display = "none";
+        // Remove all action buttons from top bar on login page
+        if (navControls) navControls.style.display = "none";
 
-        if (loginBtn) loginBtn.style.display = "inline-flex";
+        if (loginBtn) loginBtn.style.display = "none";
         if (profileChip) profileChip.style.display = "none";
     }
 }
