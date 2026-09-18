@@ -7,12 +7,16 @@ from sqlalchemy.orm import declarative_base, sessionmaker, scoped_session
 from backend.app.core.config import settings
 
 # Engine configuration
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
 connect_args = {}
-if "sqlite" in settings.DATABASE_URL:
+if "sqlite" in db_url:
     connect_args = {"check_same_thread": False, "timeout": 30.0}
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    db_url,
     connect_args=connect_args,
     echo=False,
     pool_pre_ping=True
