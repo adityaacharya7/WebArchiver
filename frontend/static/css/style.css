@@ -1902,3 +1902,21 @@ body::after {
     color: var(--ink-muted, #64748b);
 }
 
+@media (max-width: 640px) {
+    .auth-gate-screen {
+        padding: 24px 14px;
+    }
+    .auth-gate-card {
+        padding: 30px 18px 24px 18px;
+    }
+    .auth-gate-title {
+        font-size: 1.55rem;
+    }
+    .auth-gate-watermark {
+        display: none;
+    }
+    .auth-gate-features {
+        display: none;
+    }
+}
+

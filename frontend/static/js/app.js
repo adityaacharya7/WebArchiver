@@ -9,18 +9,13 @@ let searchDebounceTimer = null;
 let activeTab = "tab-overview";
 let pollingInterval = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-    initApp();
+document.addEventListener("DOMContentLoaded", async () => {
+    await initApp();
 });
 
-function initApp() {
-    initAuth();
-    loadStats();
-    loadDomains();
-    loadQueueItems();
-    loadRepositoryUrls(1);
-    loadSchedules();
+async function initApp() {
     initModalListeners();
+    await initAuth();
 
     // Start 2.5-second live polling loop (only polls when authenticated)
     if (pollingInterval) clearInterval(pollingInterval);
@@ -264,13 +259,19 @@ async function handleAddDomain(e) {
         });
         const data = await res.json();
         if (res.ok) {
-            showToast(`Domain ${data.domain.domain} registered!`, "success");
+            if (data.status === "exists") {
+                showToast(`Domain ${data.domain.domain} is already active in your dashboard!`, "info");
+            } else if (data.status === "claimed") {
+                showToast(`Domain ${data.domain.domain} claimed & linked to your profile!`, "success");
+            } else {
+                showToast(`Domain ${data.domain.domain} registered!`, "success");
+            }
             domainInput.value = "";
             loadDomains();
             loadStats();
 
-            // Ask if user wants to discover immediately
-            if (confirm(`Domain ${data.domain.domain} added! Would you like to run URL discovery now?`)) {
+            // Ask if user wants to discover immediately on new registration
+            if (data.status === "created" && confirm(`Domain ${data.domain.domain} added! Would you like to run URL discovery now?`)) {
                 triggerDiscovery(data.domain.id);
             }
         } else {
@@ -416,6 +417,9 @@ async function deleteDomain(domainId) {
             loadDomains();
             loadStats();
             loadRepositoryUrls(1);
+        } else {
+            const err = await res.json().catch(() => ({}));
+            showToast(err.detail || "Failed to delete domain", "failed");
         }
     } catch (err) {
         showToast("Failed to delete domain", "failed");
@@ -995,9 +999,11 @@ let firebaseInitialized = false;
 
 async function initAuth() {
     checkUrlAuthParams();
-    await initFirebase();
-    await loadAuthConfig();
-    await checkAuthStatus();
+    await Promise.all([
+        initFirebase(),
+        checkAuthStatus(),
+        loadAuthConfig(),
+    ]);
 }
 
 async function initFirebase() {
@@ -1189,6 +1195,17 @@ async function loginDemoUser() {
     }
 }
 
+function clearUserDataCache() {
+    const domainList = document.getElementById("domain-list-body");
+    if (domainList) domainList.innerHTML = "";
+    const repoList = document.getElementById("repo-results-body");
+    if (repoList) repoList.innerHTML = "";
+    const queueList = document.getElementById("queue-items-body");
+    if (queueList) queueList.innerHTML = "";
+    const scheduleList = document.getElementById("schedules-list-body");
+    if (scheduleList) scheduleList.innerHTML = "";
+}
+
 async function logoutUser() {
     try {
         if (window.firebase && firebase.apps && firebase.apps.length) {
@@ -1197,6 +1214,7 @@ async function logoutUser() {
         const res = await fetch("/api/auth/logout", { method: "POST" });
         if (res.ok) {
             currentUser = null;
+            clearUserDataCache();
             updateAuthUI(null);
             showToast("Successfully signed out.", "info");
         }

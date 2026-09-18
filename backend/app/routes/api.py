@@ -47,7 +47,7 @@ def get_system_stats(
             db.query(Submission).join(Url).filter(Url.domain_id.in_(dom_ids), Submission.status == "failed").count()
             if dom_ids else 0
         )
-        q_stats = QueueManager.get_stats(db, domain_id=dom_ids[0] if len(dom_ids) == 1 else None)
+        q_stats = QueueManager.get_stats(db, user_id=current_user.id)
     else:
         total_domains = db.query(Domain).count()
         total_urls = db.query(Url).count()
@@ -163,6 +163,14 @@ def create_domain(
             existing.user_id = current_user.id
             db.commit()
             db.refresh(existing)
+            return {"status": "claimed", "domain": existing.to_dict()}
+        elif current_user and existing.user_id == current_user.id:
+            return {"status": "exists", "domain": existing.to_dict()}
+        elif current_user and existing.user_id and existing.user_id != current_user.id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Domain '{clean_name}' is already registered under another operator account.",
+            )
         return {"status": "exists", "domain": existing.to_dict()}
 
     new_domain = Domain(
@@ -178,11 +186,17 @@ def create_domain(
 
 
 @router.delete("/domains/{domain_id}")
-def delete_domain(domain_id: int, db: Session = Depends(get_db)):
+def delete_domain(
+    domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Delete a domain and all associated URLs and submissions."""
     domain = db.query(Domain).filter(Domain.id == domain_id).first()
     if not domain:
         raise HTTPException(status_code=404, detail="Domain not found.")
+    if current_user and domain.user_id and domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this domain.")
 
     scheduler_service.remove_schedule(domain_id)
     db.delete(domain)
@@ -209,12 +223,15 @@ async def trigger_discovery(
     background_tasks: BackgroundTasks,
     payload: dict = None,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ):
     """Trigger multi-strategy discovery for a domain."""
     payload = payload or {}
     domain = db.query(Domain).filter(Domain.id == domain_id).first()
     if not domain:
         raise HTTPException(status_code=404, detail="Domain not found.")
+    if current_user and domain.user_id and domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this domain.")
 
     max_depth = payload.get("max_depth", 3)
     max_pages = payload.get("max_pages", 500)
@@ -237,20 +254,33 @@ async def trigger_discovery(
 
 # --- Queue & Enqueueing Operations ---
 @router.get("/domains/{domain_id}/inventory")
-def get_domain_inventory(domain_id: int, db: Session = Depends(get_db)):
+def get_domain_inventory(
+    domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Inspect domain inventory (archived vs unarchived counts)."""
     domain = db.query(Domain).filter(Domain.id == domain_id).first()
     if not domain:
         raise HTTPException(status_code=404, detail="Domain not found.")
+    if current_user and domain.user_id and domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this domain.")
     return ChangeDetector.inspect_domain_inventory(db, domain_id)
 
 
 @router.post("/domains/{domain_id}/enqueue")
-def enqueue_domain_urls(domain_id: int, payload: dict = None, db: Session = Depends(get_db)):
+def enqueue_domain_urls(
+    domain_id: int,
+    payload: dict = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Enqueue domain URLs for archival submission."""
     domain = db.query(Domain).filter(Domain.id == domain_id).first()
     if not domain:
         raise HTTPException(status_code=404, detail="Domain not found.")
+    if current_user and domain.user_id and domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this domain.")
 
     payload = payload or {}
     services = payload.get("services", ["wayback"])
@@ -271,7 +301,11 @@ def enqueue_domain_urls(domain_id: int, payload: dict = None, db: Session = Depe
 
 
 @router.post("/domains/enqueue-all")
-def enqueue_all_domains(payload: dict = None, db: Session = Depends(get_db)):
+def enqueue_all_domains(
+    payload: dict = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """
     Combined processing queue (Section 4 deliverable):
     Enqueues URLs across all active registered domains into the common processing queue.
@@ -283,7 +317,10 @@ def enqueue_all_domains(payload: dict = None, db: Session = Depends(get_db)):
     rearchive_changed = payload.get("rearchive_changed", False) or mode == "rearchive_changed"
     priority = payload.get("priority", 0)
 
-    domains = db.query(Domain).filter(Domain.status == "active").all()
+    query = db.query(Domain).filter(Domain.status == "active")
+    if current_user:
+        query = query.filter(Domain.user_id == current_user.id)
+    domains = query.all()
     total_enqueued = 0
     domain_reports = []
 
@@ -341,9 +378,21 @@ def resume_queue():
 
 
 @router.post("/queue/retry-failed")
-def retry_failed_queue_items(domain_id: int | None = None, db: Session = Depends(get_db)):
+def retry_failed_queue_items(
+    domain_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Reset failed_permanent items back to pending for retry."""
-    count = QueueManager.retry_permanent_failures(db, domain_id=domain_id)
+    if current_user and domain_id:
+        domain = db.query(Domain).filter(Domain.id == domain_id).first()
+        if not domain or (domain.user_id and domain.user_id != current_user.id):
+            raise HTTPException(status_code=403, detail="Forbidden: You do not own this domain.")
+    count = QueueManager.retry_permanent_failures(
+        db,
+        domain_id=domain_id,
+        user_id=current_user.id if current_user else None,
+    )
     return {"status": "retried", "reset_count": count}
 
 
@@ -456,11 +505,17 @@ def search_repository_urls(
 
 
 @router.get("/urls/{url_id}/history")
-def get_url_history(url_id: int, db: Session = Depends(get_db)):
+def get_url_history(
+    url_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Retrieve complete submission history for a URL."""
     url = db.query(Url).filter(Url.id == url_id).first()
     if not url:
         raise HTTPException(status_code=404, detail="URL not found.")
+    if current_user and url.domain and url.domain.user_id and url.domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this resource.")
 
     subs = db.query(Submission).filter(Submission.url_id == url_id).order_by(Submission.submitted_at.desc()).all()
     queue_items = db.query(QueueItem).filter(QueueItem.url_id == url_id).order_by(QueueItem.id.desc()).all()
@@ -473,11 +528,17 @@ def get_url_history(url_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/urls/{url_id}/availability")
-async def check_url_wayback_availability(url_id: int, db: Session = Depends(get_db)):
+async def check_url_wayback_availability(
+    url_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Check Wayback Machine Availability API (inspired by waybackpy) for an existing snapshot."""
     url = db.query(Url).filter(Url.id == url_id).first()
     if not url:
         raise HTTPException(status_code=404, detail="URL not found.")
+    if current_user and url.domain and url.domain.user_id and url.domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this resource.")
 
     from backend.app.submitters.wayback import WaybackSubmitter
     wayback = WaybackSubmitter()
@@ -543,7 +604,11 @@ def compute_snapshot_diff(payload: dict):
 
 
 @router.post("/bonus/schedule")
-def add_schedule(payload: dict, db: Session = Depends(get_db)):
+def add_schedule(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Create or update automated recurring scan schedule for a domain."""
     domain_id = payload.get("domain_id")
     interval = payload.get("interval_minutes", 1440)  # default: daily
@@ -554,6 +619,8 @@ def add_schedule(payload: dict, db: Session = Depends(get_db)):
     domain = db.query(Domain).filter(Domain.id == domain_id).first()
     if not domain:
         raise HTTPException(status_code=404, detail="Domain not found.")
+    if current_user and domain.user_id and domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this domain.")
 
     sched = db.query(Schedule).filter(Schedule.domain_id == domain_id).first()
     now = utc_now()
@@ -591,11 +658,17 @@ def list_schedules(
 
 
 @router.delete("/bonus/schedule/{schedule_id}")
-def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
+def delete_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
     """Cancel and remove a recurring scheduled scan."""
     sched = db.query(Schedule).filter(Schedule.id == schedule_id).first()
     if not sched:
         raise HTTPException(status_code=404, detail="Schedule not found.")
+    if current_user and sched.domain and sched.domain.user_id and sched.domain.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Forbidden: You do not own this schedule.")
     scheduler_service.remove_schedule(sched.domain_id)
     db.delete(sched)
     db.commit()

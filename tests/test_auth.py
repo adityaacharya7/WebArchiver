@@ -207,3 +207,44 @@ def test_multitenant_user_data_isolation(client):
     assert "beta-research.io" not in export_beta or "alpha-preservation.org" not in export_beta
     assert "alpha-preservation.org" not in export_beta
 
+
+def test_multitenant_ownership_security(client):
+    """Verify that users cannot delete, crawl, or modify another user's domain."""
+    # 1. Login Alpha and create domain
+    client.post("/api/auth/demo-login", json={"name": "Alpha", "email": "alpha@sec.io"})
+    create_resp = client.post("/api/domains", json={"domain": "alpha-secure-zone.org"})
+    assert create_resp.status_code == 200
+    alpha_dom_id = create_resp.json()["domain"]["id"]
+
+    # 2. Logout Alpha, Login Beta
+    client.post("/api/auth/logout")
+    client.post("/api/auth/demo-login", json={"name": "Beta", "email": "beta@sec.io"})
+
+    # 3. Beta tries to register Alpha's domain -> 400 Bad Request
+    dup_resp = client.post("/api/domains", json={"domain": "alpha-secure-zone.org"})
+    assert dup_resp.status_code == 400
+    assert "already registered" in dup_resp.json()["detail"]
+
+    # 4. Beta tries to delete Alpha's domain -> 403 Forbidden
+    del_resp = client.delete(f"/api/domains/{alpha_dom_id}")
+    assert del_resp.status_code == 403
+
+    # 5. Beta tries to trigger crawl on Alpha's domain -> 403 Forbidden
+    crawl_resp = client.post(f"/api/domains/{alpha_dom_id}/discover", json={})
+    assert crawl_resp.status_code == 403
+
+    # 6. Beta tries to enqueue Alpha's domain -> 403 Forbidden
+    enq_resp = client.post(f"/api/domains/{alpha_dom_id}/enqueue", json={})
+    assert enq_resp.status_code == 403
+
+    # 7. Beta tries to schedule crawl on Alpha's domain -> 403 Forbidden
+    sched_resp = client.post("/api/bonus/schedule", json={"domain_id": alpha_dom_id, "interval_minutes": 60})
+    assert sched_resp.status_code == 403
+
+    # 8. Logout Beta, Login Alpha again -> Alpha can delete their own domain
+    client.post("/api/auth/logout")
+    client.post("/api/auth/demo-login", json={"name": "Alpha", "email": "alpha@sec.io"})
+    del_alpha_resp = client.delete(f"/api/domains/{alpha_dom_id}")
+    assert del_alpha_resp.status_code == 200
+
+

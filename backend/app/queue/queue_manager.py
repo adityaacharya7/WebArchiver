@@ -193,11 +193,13 @@ class QueueManager:
         db.commit()
 
     @staticmethod
-    def retry_permanent_failures(db: Session, domain_id: int | None = None) -> int:
-        """Reset failed_permanent items back to pending for manual retry."""
+    def retry_permanent_failures(db: Session, domain_id: int | None = None, user_id: int | None = None) -> int:
+        """Reset failed_permanent items back to pending for manual retry, scoped to domain or user."""
         query = db.query(QueueItem).filter(QueueItem.status == "failed_permanent")
         if domain_id:
             query = query.join(Url).filter(Url.domain_id == domain_id)
+        elif user_id:
+            query = query.join(Url).join(Domain).filter(Domain.user_id == user_id)
 
         items = query.all()
         count = len(items)
@@ -213,11 +215,13 @@ class QueueManager:
         return count
 
     @staticmethod
-    def get_stats(db: Session, domain_id: int | None = None) -> dict:
-        """Get summary stats of the queue."""
+    def get_stats(db: Session, domain_id: int | None = None, user_id: int | None = None) -> dict:
+        """Get summary stats of the queue, scoped to domain or user."""
         query = db.query(QueueItem)
         if domain_id:
             query = query.join(Url).filter(Url.domain_id == domain_id)
+        elif user_id:
+            query = query.join(Url).join(Domain).filter(Domain.user_id == user_id)
 
         total = query.count()
         pending = query.filter(QueueItem.status == "pending").count()
