@@ -22,9 +22,10 @@ function initApp() {
     loadSchedules();
     initModalListeners();
 
-    // Start 2.5-second live polling loop
+    // Start 2.5-second live polling loop (only polls when authenticated)
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(() => {
+        if (!currentUser) return;
         loadStats();
         if (activeTab === "tab-overview") {
             loadDomains();
@@ -1018,10 +1019,18 @@ async function initFirebase() {
             if (statusEl) {
                 statusEl.innerHTML = `<span style="color: #10b981;">● Firebase Armed (${config.projectId})</span>`;
             }
+            const gateStatusEl = document.getElementById("gate-firebase-status");
+            if (gateStatusEl) {
+                gateStatusEl.innerHTML = `<span style="color: #10b981;">●</span> Firebase Armed (${config.projectId})`;
+            }
         } else {
             const statusEl = document.getElementById("google-config-status");
             if (statusEl) {
                 statusEl.innerHTML = '<span>⚙️ Firebase keys not set in .env. Use <strong>Demo Mode</strong> or add FIREBASE_API_KEY</span>';
+            }
+            const gateStatusEl = document.getElementById("gate-firebase-status");
+            if (gateStatusEl) {
+                gateStatusEl.innerHTML = '<span>⚡ Standby · Ready for Google / Demo Sign In</span>';
             }
         }
     } catch (err) {
@@ -1073,25 +1082,42 @@ async function checkAuthStatus() {
 function updateAuthUI(user) {
     const loginBtn = document.getElementById("btn-google-auth");
     const profileChip = document.getElementById("user-profile-chip");
-
-    if (!loginBtn || !profileChip) return;
+    const authGateScreen = document.getElementById("auth-gate-screen");
+    const appContainer = document.getElementById("app-container");
 
     if (user) {
-        loginBtn.style.display = "none";
-        profileChip.style.display = "flex";
+        // Hide sign-in gate, reveal Mission Control deck
+        if (authGateScreen) authGateScreen.style.display = "none";
+        if (appContainer) appContainer.style.display = "block";
 
-        const avatarImg = document.getElementById("user-chip-avatar");
-        const nameEl = document.getElementById("user-chip-name");
-        const roleEl = document.getElementById("user-chip-role");
+        if (loginBtn) loginBtn.style.display = "none";
+        if (profileChip) {
+            profileChip.style.display = "flex";
 
-        if (avatarImg) {
-            avatarImg.src = user.picture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+            const avatarImg = document.getElementById("user-chip-avatar");
+            const nameEl = document.getElementById("user-chip-name");
+            const roleEl = document.getElementById("user-chip-role");
+
+            if (avatarImg) {
+                avatarImg.src = user.picture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+            }
+            if (nameEl) nameEl.textContent = user.name || user.email || "Commander";
+            if (roleEl) roleEl.textContent = (user.role || "OPERATOR").toUpperCase();
         }
-        if (nameEl) nameEl.textContent = user.name || user.email || "Commander";
-        if (roleEl) roleEl.textContent = (user.role || "OPERATOR").toUpperCase();
+
+        // Refresh data scoped to this authenticated user
+        loadStats();
+        loadDomains();
+        loadQueueItems();
+        loadRepositoryUrls(1);
+        loadSchedules();
     } else {
-        loginBtn.style.display = "inline-flex";
-        profileChip.style.display = "none";
+        // Show dedicated sign-in gate, lock Mission Control deck
+        if (authGateScreen) authGateScreen.style.display = "flex";
+        if (appContainer) appContainer.style.display = "none";
+
+        if (loginBtn) loginBtn.style.display = "inline-flex";
+        if (profileChip) profileChip.style.display = "none";
     }
 }
 

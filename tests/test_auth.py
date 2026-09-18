@@ -154,3 +154,56 @@ def test_firebase_session_endpoint(client):
     me_resp = client.get("/api/auth/me")
     assert me_resp.status_code == 200
     assert me_resp.json()["user"]["email"] == "sarah.connor@cyberdyne.org"
+
+
+def test_multitenant_user_data_isolation(client):
+    """Verify that domains, stats, and exports are strictly isolated per authenticated user."""
+    # 1. Login as Operator Alpha
+    resp_alpha = client.post(
+        "/api/auth/demo-login",
+        json={"name": "Operator Alpha", "email": "alpha@orbitronix.space"},
+    )
+    assert resp_alpha.status_code == 200
+
+    # Alpha creates a domain
+    add_resp = client.post("/api/domains", json={"domain": "alpha-preservation.org"})
+    assert add_resp.status_code == 200
+    assert add_resp.json()["status"] == "created"
+
+    # Verify Alpha sees their domain
+    domains_alpha = client.get("/api/domains").json()
+    assert len(domains_alpha) == 1
+    assert domains_alpha[0]["domain"] == "alpha-preservation.org"
+
+    # Verify Alpha stats
+    stats_alpha = client.get("/api/stats").json()
+    assert stats_alpha["total_domains"] == 1
+
+    # 2. Logout Alpha
+    client.post("/api/auth/logout")
+
+    # 3. Login as Operator Beta
+    resp_beta = client.post(
+        "/api/auth/demo-login",
+        json={"name": "Operator Beta", "email": "beta@orbitronix.space"},
+    )
+    assert resp_beta.status_code == 200
+
+    # Verify Beta DOES NOT see Alpha's domain
+    domains_beta = client.get("/api/domains").json()
+    assert len(domains_beta) == 0
+
+    stats_beta = client.get("/api/stats").json()
+    assert stats_beta["total_domains"] == 0
+
+    # Beta creates their own domain
+    client.post("/api/domains", json={"domain": "beta-research.io"})
+    domains_beta_updated = client.get("/api/domains").json()
+    assert len(domains_beta_updated) == 1
+    assert domains_beta_updated[0]["domain"] == "beta-research.io"
+
+    # Verify Beta's CSV export contains only their domain
+    export_beta = client.get("/api/export?format=csv").text
+    assert "beta-research.io" not in export_beta or "alpha-preservation.org" not in export_beta
+    assert "alpha-preservation.org" not in export_beta
+

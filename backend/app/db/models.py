@@ -26,18 +26,21 @@ class Domain(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     domain = Column(String(255), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     status = Column(String(50), default="active", nullable=False)  # active | paused | completed
     created_at = Column(DateTime, default=utc_now, nullable=False)
     last_scan_at = Column(DateTime, nullable=True)
     last_submission_at = Column(DateTime, nullable=True)
 
     # Relationships
+    user = relationship("User", back_populates="domains")
     urls = relationship("Url", back_populates="domain", cascade="all, delete-orphan")
     schedules = relationship("Schedule", back_populates="domain", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "domain": self.domain,
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None,
@@ -212,6 +215,9 @@ class User(Base):
     session_token = Column(String(128), unique=True, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     last_login_at = Column(DateTime, default=utc_now, nullable=False)
+
+    # Relationships
+    domains = relationship("Domain", back_populates="user", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {

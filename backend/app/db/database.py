@@ -75,8 +75,11 @@ def init_db():
                 existing_cols = {row[1] for row in res}
                 if "previous_content_hash" not in existing_cols:
                     conn.execute(text("ALTER TABLE urls ADD COLUMN previous_content_hash VARCHAR(64)"))
-                if "content_changed" not in existing_cols:
-                    conn.execute(text("ALTER TABLE urls ADD COLUMN content_changed BOOLEAN DEFAULT 0 NOT NULL"))
+                # Safe migration for domains.user_id
+                dom_res = conn.execute(text("PRAGMA table_info(domains)")).fetchall()
+                dom_cols = {row[1] for row in dom_res}
+                if "user_id" not in dom_cols:
+                    conn.execute(text("ALTER TABLE domains ADD COLUMN user_id INTEGER REFERENCES users(id)"))
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning(f"Database migration note: {e}")

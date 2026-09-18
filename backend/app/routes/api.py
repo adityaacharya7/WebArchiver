@@ -2,13 +2,15 @@
 REST API endpoints for domains, discovery, queue, repository search, and bonuses.
 """
 import asyncio
+from typing import Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc
 
 from backend.app.db.database import get_db, get_db_context
-from backend.app.db.models import Domain, Url, QueueItem, Submission, Schedule, utc_now
+from backend.app.db.models import Domain, Url, QueueItem, Submission, Schedule, User, utc_now
+from backend.app.routes.auth import get_current_user
 from backend.app.normalizer.normalizer import clean_domain_name, normalize_url, compute_url_hash
 from backend.app.crawler.discovery_manager import DiscoveryManager
 from backend.app.crawler.playwright_crawler import PlaywrightCrawler
@@ -25,16 +27,34 @@ router = APIRouter(prefix="/api")
 
 # --- System & Dashboard Metrics ---
 @router.get("/stats")
-def get_system_stats(db: Session = Depends(get_db)):
-    """Global summary metrics for the executive dashboard."""
-    total_domains = db.query(Domain).count()
-    total_urls = db.query(Url).count()
-
-    q_stats = QueueManager.get_stats(db)
-
-    total_submissions = db.query(Submission).count()
-    success_submissions = db.query(Submission).filter(Submission.status == "success").count()
-    failed_submissions = db.query(Submission).filter(Submission.status == "failed").count()
+def get_system_stats(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Summary metrics for the dashboard, scoped to the active user if authenticated."""
+    if current_user:
+        dom_ids = [d[0] for d in db.query(Domain.id).filter(Domain.user_id == current_user.id).all()]
+        total_domains = len(dom_ids)
+        total_urls = db.query(Url).filter(Url.domain_id.in_(dom_ids)).count() if dom_ids else 0
+        total_submissions = (
+            db.query(Submission).join(Url).filter(Url.domain_id.in_(dom_ids)).count() if dom_ids else 0
+        )
+        success_submissions = (
+            db.query(Submission).join(Url).filter(Url.domain_id.in_(dom_ids), Submission.status == "success").count()
+            if dom_ids else 0
+        )
+        failed_submissions = (
+            db.query(Submission).join(Url).filter(Url.domain_id.in_(dom_ids), Submission.status == "failed").count()
+            if dom_ids else 0
+        )
+        q_stats = QueueManager.get_stats(db, domain_id=dom_ids[0] if len(dom_ids) == 1 else None)
+    else:
+        total_domains = db.query(Domain).count()
+        total_urls = db.query(Url).count()
+        q_stats = QueueManager.get_stats(db)
+        total_submissions = db.query(Submission).count()
+        success_submissions = db.query(Submission).filter(Submission.status == "success").count()
+        failed_submissions = db.query(Submission).filter(Submission.status == "failed").count()
 
     # Success rate
     rate = round((success_submissions / total_submissions * 100), 1) if total_submissions > 0 else 0.0
@@ -42,7 +62,10 @@ def get_system_stats(db: Session = Depends(get_db)):
     # Per-service performance & latency metrics (Section 17)
     services_metrics = {}
     for s_name in list_available_services():
-        s_subs = db.query(Submission).filter(Submission.service == s_name).all()
+        s_query = db.query(Submission).filter(Submission.service == s_name)
+        if current_user and dom_ids:
+            s_query = s_query.join(Url).filter(Url.domain_id.in_(dom_ids))
+        s_subs = s_query.all()
         s_count = len(s_subs)
         s_success = sum(1 for s in s_subs if s.status == "success")
         durations = [
@@ -76,9 +99,15 @@ def get_system_stats(db: Session = Depends(get_db)):
 
 # --- Domain Management ---
 @router.get("/domains")
-def list_domains(db: Session = Depends(get_db)):
-    """List all registered domains with per-domain metrics."""
-    domains = db.query(Domain).order_by(Domain.id.desc()).all()
+def list_domains(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """List registered domains, scoped to the current user if authenticated."""
+    query = db.query(Domain)
+    if current_user:
+        query = query.filter(Domain.user_id == current_user.id)
+    domains = query.order_by(Domain.id.desc()).all()
     results = []
 
     for d in domains:
@@ -114,8 +143,12 @@ def list_domains(db: Session = Depends(get_db)):
 
 
 @router.post("/domains")
-def create_domain(payload: dict, db: Session = Depends(get_db)):
-    """Register a new domain for archiving."""
+def create_domain(
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Register a new domain for archiving, linked to current user."""
     raw_domain = payload.get("domain", "").strip()
     if not raw_domain:
         raise HTTPException(status_code=400, detail="Domain cannot be empty.")
@@ -126,9 +159,17 @@ def create_domain(payload: dict, db: Session = Depends(get_db)):
 
     existing = db.query(Domain).filter(Domain.domain == clean_name).first()
     if existing:
+        if current_user and existing.user_id is None:
+            existing.user_id = current_user.id
+            db.commit()
+            db.refresh(existing)
         return {"status": "exists", "domain": existing.to_dict()}
 
-    new_domain = Domain(domain=clean_name, status="active")
+    new_domain = Domain(
+        domain=clean_name,
+        status="active",
+        user_id=current_user.id if current_user else None,
+    )
     db.add(new_domain)
     db.commit()
     db.refresh(new_domain)
@@ -272,9 +313,12 @@ def list_queue_items(
     limit: int = 50,
     status: str | None = None,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ):
     """List recent queue items with normalized URL and status."""
     query = db.query(QueueItem)
+    if current_user:
+        query = query.join(Url).join(Domain).filter(Domain.user_id == current_user.id)
     if status:
         query = query.filter(QueueItem.status == status)
 
@@ -314,6 +358,7 @@ def search_repository_urls(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=200),
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ):
     """
     Search and filter the archival repository:
@@ -323,6 +368,8 @@ def search_repository_urls(
     - Filter by discovery source (html, sitemap, feed, robots)
     """
     query = db.query(Url)
+    if current_user:
+        query = query.join(Domain).filter(Domain.user_id == current_user.id)
 
     if domain_id:
         query = query.filter(Url.domain_id == domain_id)
@@ -448,10 +495,12 @@ def export_repository(
     format: str = Query(default="csv", pattern="^(csv|json)$"),
     domain_id: int | None = None,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ):
-    """Export complete archival inventory in CSV or JSON format."""
+    """Export complete archival inventory in CSV or JSON format, scoped to user."""
+    user_id = current_user.id if current_user else None
     if format == "csv":
-        csv_data = ExportService.export_csv(db, domain_id=domain_id)
+        csv_data = ExportService.export_csv(db, domain_id=domain_id, user_id=user_id)
         filename = f"archive_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
         return Response(
             content=csv_data,
@@ -459,7 +508,7 @@ def export_repository(
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     else:
-        json_data = ExportService.export_json(db, domain_id=domain_id)
+        json_data = ExportService.export_json(db, domain_id=domain_id, user_id=user_id)
         filename = f"archive_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         return Response(
             content=json_data,
@@ -529,9 +578,15 @@ def add_schedule(payload: dict, db: Session = Depends(get_db)):
 
 
 @router.get("/bonus/schedules")
-def list_schedules(db: Session = Depends(get_db)):
-    """List all scheduled recurring scans."""
-    schedules = db.query(Schedule).all()
+def list_schedules(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """List scheduled recurring scans, scoped to current user if authenticated."""
+    query = db.query(Schedule)
+    if current_user:
+        query = query.join(Domain).filter(Domain.user_id == current_user.id)
+    schedules = query.all()
     return [s.to_dict() for s in schedules]
 
 

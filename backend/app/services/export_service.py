@@ -12,7 +12,7 @@ class ExportService:
     """Exports domain and archival submission records to CSV and JSON."""
 
     @staticmethod
-    def get_inventory_rows(db: Session, domain_id: int | None = None) -> list[dict]:
+    def get_inventory_rows(db: Session, domain_id: int | None = None, user_id: int | None = None) -> list[dict]:
         """Fetch joined inventory rows for export."""
         query = (
             db.query(
@@ -37,6 +37,8 @@ class ExportService:
 
         if domain_id:
             query = query.filter(Domain.id == domain_id)
+        elif user_id:
+            query = query.filter(Domain.user_id == user_id)
 
         rows = query.all()
         results = []
@@ -60,9 +62,9 @@ class ExportService:
         return results
 
     @staticmethod
-    def export_csv(db: Session, domain_id: int | None = None) -> str:
+    def export_csv(db: Session, domain_id: int | None = None, user_id: int | None = None) -> str:
         """Export inventory to CSV formatted string with formula-injection defenses."""
-        rows = ExportService.get_inventory_rows(db, domain_id)
+        rows = ExportService.get_inventory_rows(db, domain_id=domain_id, user_id=user_id)
         output = io.StringIO()
         if not rows:
             return "domain,original_url,normalized_url,discovery_source,discovery_timestamp,http_status,content_hash,content_changed,service,submission_status,archive_url,archive_id,error_message,last_attempted\n"
@@ -85,7 +87,7 @@ class ExportService:
         return output.getvalue()
 
     @staticmethod
-    def export_json(db: Session, domain_id: int | None = None) -> str:
+    def export_json(db: Session, domain_id: int | None = None, user_id: int | None = None) -> str:
         """Export inventory to indented JSON formatted string."""
-        rows = ExportService.get_inventory_rows(db, domain_id)
+        rows = ExportService.get_inventory_rows(db, domain_id=domain_id, user_id=user_id)
         return json.dumps(rows, indent=2)
