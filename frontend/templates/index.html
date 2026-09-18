@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Website Archive Submitter & Automated Backup Repository - Automated URL discovery, multi-service submission to Wayback Machine and Archive.today, crash-resilient queue, and historical repository.">
+    <title>{{ project_name }}</title>
+    <!-- Google Fonts: Orbitronix Typography Stack -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Archivo:wght@200;300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Orbitronix Telemetry Marquee Ticker -->
+    <div class="ox-ticker-bar">
+        <div class="ox-marquee">
+            <span class="ox-ticker-item"><span class="ox-reg"></span> AUTONOMOUS TELEMETRY PIPELINE OPERATIONAL</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> PERSISTENT SQLITE WAL SUBSTRATE ACTIVE</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> TOKEN BUCKET RATE LIMITING ARMED (15 REQ/MIN)</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> INTERNET ARCHIVE S3 SPN2 AUTHENTICATED</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> MULTI-STRATEGY DISCOVERY ENGINE ONLINE</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> RFC 3986 CANONICAL DEDUPLICATION ACTIVE</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> AUTONOMOUS TELEMETRY PIPELINE OPERATIONAL</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> PERSISTENT SQLITE WAL SUBSTRATE ACTIVE</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> TOKEN BUCKET RATE LIMITING ARMED (15 REQ/MIN)</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> INTERNET ARCHIVE S3 SPN2 AUTHENTICATED</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> MULTI-STRATEGY DISCOVERY ENGINE ONLINE</span>
+            <span class="ox-ticker-item"><span class="ox-reg"></span> RFC 3986 CANONICAL DEDUPLICATION ACTIVE</span>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Top Navigation Bar (Orbitronix Masthead) -->
+        <header class="top-nav ox-bracket" id="top-nav">
+            <span class="masthead-watermark">ARCHIVER</span>
+            <div class="brand-group">
+                <div class="brand-badge">
+                    <span class="pulse-dot active" id="system-pulse"></span>
+                    <span class="brand-version">v{{ version }}</span>
+                </div>
+                <div class="brand-titles">
+                    <div class="brand-eyebrow">
+                        <span class="ox-reg"></span>
+                        <span class="ox-micro">MISSION CONTROL · ORBITAL ARCHIVAL DECK</span>
+                    </div>
+                    <h1 class="brand-title">WEBSITE ARCHIVE <span class="ox-editorial-i" style="color: var(--ink-muted);">SUBMITTER</span></h1>
+                    <p class="brand-subtitle">Automated Backup Repository & Archival Pipeline</p>
+                </div>
+            </div>
+
+            <div class="nav-controls">
+                <div class="worker-pill" id="worker-status-pill">
+                    <span class="status-indicator live"></span>
+                    <span id="worker-status-text">Workers Active</span>
+                </div>
+
+                <button class="btn btn-outline" id="btn-pause-resume" onclick="toggleWorkerPause()">
+                    <span id="pause-resume-icon">⏸</span>
+                    <span id="pause-resume-text">Pause Queue</span>
+                </button>
+
+                <button class="btn btn-secondary" id="btn-quick-export" onclick="exportData('csv')">
+                    <span>⬇ Export CSV</span>
+                </button>
+
+                <button class="btn btn-primary" id="btn-open-add-domain" onclick="switchTab('tab-domains'); document.getElementById('new-domain-input').focus();">
+                    <span>+ Add Domain</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Tab Navigation -->
+        <nav class="main-tabs" aria-label="Main Navigation">
+            <button class="tab-btn active" id="tab-nav-overview" onclick="switchTab('tab-overview')">
+                <span class="tab-index">[ 01 ]</span>
+                <span>Executive Dashboard</span>
+            </button>
+            <button class="tab-btn" id="tab-nav-domains" onclick="switchTab('tab-domains')">
+                <span class="tab-index">[ 02 ]</span>
+                <span>Domains & Crawling</span>
+            </button>
+            <button class="tab-btn" id="tab-nav-repository" onclick="switchTab('tab-repository')">
+                <span class="tab-index">[ 03 ]</span>
+                <span>Search & Repository</span>
+            </button>
+            <button class="tab-btn" id="tab-nav-queue" onclick="switchTab('tab-queue')">
+                <span class="tab-index">[ 04 ]</span>
+                <span>Live Submission Queue</span>
+            </button>
+            <button class="tab-btn" id="tab-nav-bonus" onclick="switchTab('tab-bonus')">
+                <span class="tab-index">[ 05 ]</span>
+                <span>Bonus Center</span>
+            </button>
+            <button class="tab-btn" id="tab-nav-demo" onclick="switchTab('tab-demo')">
+                <span class="tab-index">[ 06 ]</span>
+                <span>Section 19 Demo</span>
+            </button>
+        </nav>
+
+        <!-- Toast Notification Area -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- ================= TAB 1: EXECUTIVE DASHBOARD ================= -->
+        <main class="tab-content active" id="tab-overview">
+            <!-- Metrics Cards Grid (Orbitronix MetricCard Primitives) -->
+            <section class="metrics-grid">
+                <div class="metric-card card-cyan ox-bracket">
+                    <span class="card-index-tag">01</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Domains Managed</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="stat-domains">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer">Active archival targets</div>
+                </div>
+
+                <div class="metric-card card-purple ox-bracket">
+                    <span class="card-index-tag">02</span>
+                    <div class="metric-header">
+                        <span class="metric-label">URLs Discovered</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="stat-urls">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer">Deduped canonical inventory</div>
+                </div>
+
+                <div class="metric-card card-amber ox-bracket">
+                    <span class="card-index-tag">03</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Queue Pending</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="stat-queue-pending">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer"><span id="stat-queue-progress">0</span> in progress</div>
+                </div>
+
+                <div class="metric-card card-green ox-bracket">
+                    <span class="card-index-tag">04</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Archived Snapshots</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="stat-success-subs">0</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer"><span id="stat-total-subs">0</span> URLs submitted</div>
+                </div>
+
+                <div class="metric-card card-rose ox-bracket">
+                    <span class="card-index-tag">05</span>
+                    <div class="metric-header">
+                        <span class="metric-label">Success Rate</span>
+                        <span class="ox-reg"></span>
+                    </div>
+                    <div class="metric-value ox-display" id="stat-success-rate">0%</div>
+                    <div class="stat-divider"></div>
+                    <div class="metric-footer"><span id="stat-failed-subs">0</span> failed / retried</div>
+                </div>
+            </section>
+
+            <!-- Live Throughput & Progress Bar -->
+            <section class="panel throughput-panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 01 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Archival Pipeline Throughput</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <span class="panel-badge" id="pipeline-rate-badge">Rate: Token Bucket Protected</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar" id="overall-progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="progress-stats">
+                    <span id="progress-done-text">0 completed</span>
+                    <span id="progress-percent-text">0% complete</span>
+                    <span id="progress-pending-text">0 remaining</span>
+                </div>
+                <div class="service-latency-chips mt-sm" id="service-latency-container" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
+            </section>
+
+            <!-- Dashboard Two Column Layout -->
+            <div class="dashboard-cols">
+                <!-- Domains Overview Panel -->
+                <section class="panel col-half ox-bracket">
+                    <div class="section-rule">
+                        <span class="rule-index">[ 02 ]</span>
+                        <span class="ox-reg"></span>
+                        <h2 class="rule-title">Active Domains</h2>
+                        <span class="ox-rule-glyph"></span>
+                        <button class="btn btn-sm btn-outline" onclick="loadDomains()">Refresh</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="dashboard-domains-table">
+                            <thead>
+                                <tr>
+                                    <th>Domain</th>
+                                    <th>Discovered</th>
+                                    <th>Success</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-domains-body">
+                                <tr><td colspan="5" class="empty-state">No domains added yet. Click "+ Add Domain" above.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Live Submissions Stream Panel -->
+                <section class="panel col-half ox-bracket">
+                    <div class="section-rule">
+                        <span class="rule-index">[ 03 ]</span>
+                        <span class="ox-reg"></span>
+                        <h2 class="rule-title">Live Submission Stream</h2>
+                        <span class="ox-rule-glyph"></span>
+                        <span class="ox-micro">Auto-updating (2s)</span>
+                    </div>
+                    <div class="stream-list" id="dashboard-stream-list">
+                        <div class="empty-state">No submission events recorded yet.</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- ================= TAB 2: DOMAINS & CRAWLING ================= -->
+        <div class="tab-content" id="tab-domains">
+            <!-- Add Domain Panel -->
+            <section class="panel form-panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 04 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Add New Target Domain</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <span class="rule-note">DISCOVERY CONFIG</span>
+                </div>
+                <form id="add-domain-form" onsubmit="handleAddDomain(event)" class="domain-form">
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="new-domain-input">Target Website Domain / URL</label>
+                            <input type="text" id="new-domain-input" placeholder="e.g. example.com or https://example.com" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="crawl-depth">Max Depth</label>
+                            <select id="crawl-depth">
+                                <option value="1">1 (Homepage only)</option>
+                                <option value="2">2 (Direct links)</option>
+                                <option value="3" selected>3 (Standard crawl)</option>
+                                <option value="5">5 (Deep crawl)</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="crawl-max-pages">Page Limit</label>
+                            <select id="crawl-max-pages">
+                                <option value="50">50 pages</option>
+                                <option value="200" selected>200 pages</option>
+                                <option value="500">500 pages</option>
+                                <option value="2000">2000 pages</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row check-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check-sitemaps" checked>
+                            <span>Inspect robots.txt & Parse Sitemap.xml</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check-feeds" checked>
+                            <span>Autodiscover RSS/Atom Feeds</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check-external">
+                            <span>Allow External Links (Optional Mode)</span>
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="btn-submit-domain">
+                            <span>Register Domain</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Domains Inventory Table Panel -->
+            <section class="panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 05 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Configured Target Domains</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <button class="btn btn-sm btn-secondary" id="btn-enqueue-all" onclick="enqueueAllDomains()">
+                        <span>⚡ Enqueue All Domains (Combined Queue)</span>
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Domain Name</th>
+                                <th>URLs Discovered</th>
+                                <th>Queue Pending</th>
+                                <th>Archived (Success)</th>
+                                <th>Failed</th>
+                                <th>Last Scan</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="domains-full-table-body">
+                            <tr><td colspan="8" class="empty-state">Loading domains...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= TAB 3: SEARCH & REPOSITORY ================= -->
+        <div class="tab-content" id="tab-repository">
+            <section class="panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 06 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Archival Repository Explorer</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <div class="panel-actions" style="display: flex; gap: 8px;">
+                        <button class="btn btn-sm btn-outline" onclick="exportData('csv')">Export CSV</button>
+                        <button class="btn btn-sm btn-outline" onclick="exportData('json')">Export JSON</button>
+                    </div>
+                </div>
+
+                <!-- Search & Filters Toolbar -->
+                <div class="filter-toolbar">
+                    <div class="search-input-group flex-2">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="repo-search-input" placeholder="Search by URL or keyword..." oninput="debounceRepoSearch()">
+                    </div>
+
+                    <div class="form-group">
+                        <select id="repo-filter-domain" onchange="loadRepositoryUrls(1)">
+                            <option value="">All Domains</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <select id="repo-filter-service" onchange="loadRepositoryUrls(1)">
+                            <option value="">All Archive Services</option>
+                            <option value="wayback">Wayback Machine</option>
+                            <option value="archive_today">Archive.today</option>
+                            <option value="ghostarchive">Ghostarchive</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <select id="repo-filter-status" onchange="loadRepositoryUrls(1)">
+                            <option value="">All Statuses</option>
+                            <option value="success">Success</option>
+                            <option value="failed">Failed</option>
+                            <option value="pending">Pending Queue</option>
+                            <option value="modified">Modified Content</option>
+                            <option value="unarchived">Unarchived (Never Submitted)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <select id="repo-filter-source" onchange="loadRepositoryUrls(1)">
+                            <option value="">All Sources</option>
+                            <option value="html">HTML Link</option>
+                            <option value="sitemap">Sitemap</option>
+                            <option value="robots">Robots.txt</option>
+                            <option value="feed">RSS/Atom Feed</option>
+                            <option value="playwright">Playwright DOM</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Repository Table -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Discovered URL</th>
+                                <th>Source</th>
+                                <th>HTTP</th>
+                                <th>Submissions</th>
+                                <th>Latest Archive Link</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="repo-urls-body">
+                            <tr><td colspan="6" class="empty-state">No URLs found in repository.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Bar -->
+                <div class="pagination-bar" id="repo-pagination">
+                    <span id="repo-page-info">Showing page 1 of 1</span>
+                    <div class="page-btns">
+                        <button class="btn btn-sm btn-outline" id="btn-prev-page" onclick="changeRepoPage(-1)">Previous</button>
+                        <button class="btn btn-sm btn-outline" id="btn-next-page" onclick="changeRepoPage(1)">Next</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= TAB 4: LIVE SUBMISSION QUEUE ================= -->
+        <div class="tab-content" id="tab-queue">
+            <section class="panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 07 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Persistent Submission Queue</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <div class="panel-actions" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <select id="queue-filter-status" onchange="loadQueueItems()" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: var(--ground-deep); border: 1px solid var(--hairline-2); color: var(--ink-strong);">
+                            <option value="">All Queue Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="done">Done</option>
+                            <option value="failed_permanent">Dead Letter Queue (DLQ)</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline" onclick="loadQueueItems()">Refresh</button>
+                        <button class="btn btn-sm btn-secondary" onclick="retryFailedItems()">Retry DLQ</button>
+                        <button class="btn btn-sm btn-primary" onclick="toggleWorkerPause()">
+                            <span id="queue-tab-pause-text">Pause Workers</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Queue ID</th>
+                                <th>Target URL</th>
+                                <th>Service</th>
+                                <th>Priority</th>
+                                <th>Attempts</th>
+                                <th>Status</th>
+                                <th>Leased At</th>
+                                <th>Last Error / Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queue-items-body">
+                            <tr><td colspan="8" class="empty-state">Queue is currently empty.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= TAB 5: BONUS CENTER ================= -->
+        <div class="tab-content" id="tab-bonus">
+            <!-- Bonus 1: Playwright Dynamic DOM / Instagram Archival -->
+            <section class="panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 08 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Dynamic DOM &amp; Headless Extraction</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <span class="rule-note">PLAYWRIGHT ENGINE</span>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-3">
+                        <label for="playwright-url-input">Target Dynamic / SPA / Social Media URL</label>
+                        <input type="text" id="playwright-url-input" placeholder="e.g. https://www.instagram.com/p/C_sample/ or JS-heavy SPA page">
+                        <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="loadSampleInstagram()">Sample: Instagram Public Post</button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="loadSampleSpa()">Sample: Dynamic JS SPA</button>
+                        </div>
+                    </div>
+                    <div class="form-group flex-1 align-self-end">
+                        <button class="btn btn-primary btn-block" onclick="runPlaywrightRender()">Render Page</button>
+                    </div>
+                </div>
+                <div id="playwright-results-area" class="code-output-area" style="display: none; margin-top: 1.25rem;">
+                    <div class="section-rule" style="margin-bottom: 0.5rem;">
+                        <span class="rule-index">[ EXTRACTED DATA ]</span>
+                        <span class="ox-rule-glyph"></span>
+                    </div>
+                    <pre id="playwright-output-pre" style="background: var(--ground-deep); border: 1px solid var(--hairline-2); padding: 1rem; color: var(--ink-max); font-family: var(--font-mono); font-size: 11px; overflow-x: auto;"></pre>
+                </div>
+            </section>
+
+            <!-- Bonus 2: Snapshot Diff Inspector -->
+            <section class="panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 09 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Snapshot Content &amp; HTML Diff Comparison</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <span class="rule-note">UNIFIED DIFF ENGINE</span>
+                </div>
+                <div class="diff-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group">
+                        <label>Snapshot A (Original Baseline):</label>
+                        <textarea id="diff-text-a" rows="6" placeholder="Paste initial HTML or text content here..." style="background: var(--ground-deep); border: 1px solid var(--hairline-2); color: var(--ink-max); font-family: var(--font-mono); font-size: 11px; padding: 0.6rem; width: 100%;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Snapshot B (Updated Version):</label>
+                        <textarea id="diff-text-b" rows="6" placeholder="Paste updated HTML or text content here..." style="background: var(--ground-deep); border: 1px solid var(--hairline-2); color: var(--ink-max); font-family: var(--font-mono); font-size: 11px; padding: 0.6rem; width: 100%;"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions" style="display: flex; gap: 0.75rem;">
+                    <button class="btn btn-secondary" onclick="runSnapshotDiff()">Compute Unified Diff</button>
+                    <button type="button" class="btn btn-outline" onclick="loadSampleDiff()">Load Sample Changed HTML</button>
+                </div>
+                <div id="diff-results-area" class="diff-output-area" style="display: none; margin-top: 1.25rem;">
+                    <div class="diff-summary" id="diff-summary-text" style="font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.5rem; color: var(--ink-strong);"></div>
+                    <pre class="diff-pre" id="diff-output-pre" style="background: var(--ground-deep); border: 1px solid var(--hairline-2); padding: 1rem; font-family: var(--font-mono); font-size: 11px; overflow-x: auto; color: var(--ink-max);"></pre>
+                </div>
+            </section>
+
+            <!-- Bonus 3: Automated Recurring Schedules -->
+            <section class="panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 10 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Scheduled Recurring Domain Scans</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <span class="rule-note">APSCHEDULER ENGINE</span>
+                </div>
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label for="schedule-domain-select">Target Domain</label>
+                        <select id="schedule-domain-select">
+                            <option value="">Select a registered domain...</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="schedule-interval-select">Scan Interval</label>
+                        <select id="schedule-interval-select">
+                            <option value="60">Every 1 hour</option>
+                            <option value="360">Every 6 hours</option>
+                            <option value="720">Every 12 hours</option>
+                            <option value="1440" selected>Every 24 hours (Daily)</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1 align-self-end">
+                        <button class="btn btn-primary btn-block" onclick="createSchedule()">Add Schedule</button>
+                    </div>
+                </div>
+                <div class="table-container mt-md" style="margin-top: 1rem;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Schedule ID</th>
+                                <th>Domain</th>
+                                <th>Interval</th>
+                                <th>Active</th>
+                                <th>Last Run</th>
+                                <th>Next Scheduled Run</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedules-table-body">
+                            <tr><td colspan="7" class="empty-state">No scheduled recurring jobs currently registered.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= TAB 6: SECTION 19 DEMONSTRATION GUIDE ================= -->
+        <div class="tab-content" id="tab-demo">
+            <section class="panel ox-bracket">
+                <div class="section-rule">
+                    <span class="rule-index">[ 11 ]</span>
+                    <span class="ox-reg"></span>
+                    <h2 class="rule-title">Section 19: Mandatory Demonstration Suite</h2>
+                    <span class="ox-rule-glyph"></span>
+                    <span class="rule-note">10-STEP EVALUATION AUDIT</span>
+                </div>
+
+                <div class="demo-checklist">
+                    <div class="demo-step-card ox-bracket" id="step-card-1">
+                        <div class="step-num">01</div>
+                        <div class="step-info">
+                            <h3>Add One Domain</h3>
+                            <p>Registers a primary target domain into the database repository.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep1()">Run Step 1</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-2">
+                        <div class="step-num">02</div>
+                        <div class="step-info">
+                            <h3>Automatically Discover its URLs</h3>
+                            <p>Executes multi-source discovery (Robots.txt, Sitemap.xml, HTML BFS crawler, Feeds).</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep2()">Run Step 2</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-3">
+                        <div class="step-num">03</div>
+                        <div class="step-info">
+                            <h3>Show Discovered URL Inventory</h3>
+                            <p>Displays canonical deduplicated URLs in the Repository table.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep3()">View Inventory</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-4">
+                        <div class="step-num">04</div>
+                        <div class="step-info">
+                            <h3>Create the Submission Queue</h3>
+                            <p>Inserts URLs into persistent DB queue for target archive services.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep4()">Enqueue URLs</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-5">
+                        <div class="step-num">05</div>
+                        <div class="step-info">
+                            <h3>Submit URLs to Archive Services</h3>
+                            <p>Background workers submit URLs sequentially respecting token bucket rate limits.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep5()">Monitor Queue</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-6">
+                        <div class="step-num">06</div>
+                        <div class="step-info">
+                            <h3>Show Successful and Failed Submissions</h3>
+                            <p>Live metrics and audit records showing outcome split and error messages.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep6()">Show Outcomes</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-7">
+                        <div class="step-num">07</div>
+                        <div class="step-info">
+                            <h3>Show Stored Archive URLs</h3>
+                            <p>Opens and highlights permanent snapshot links from Wayback &amp; Archive.today.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep7()">View Snapshots</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-8">
+                        <div class="step-num">08</div>
+                        <div class="step-info">
+                            <h3>Interrupt the Process and Demonstrate Resume</h3>
+                            <p>Pauses or simulates crash; demonstrates uncompleted items safely reclaimed on restart.</p>
+                        </div>
+                        <button class="btn btn-sm btn-secondary" onclick="demoStep8()">Test Resume</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-9">
+                        <div class="step-num">09</div>
+                        <div class="step-info">
+                            <h3>Run a Second Scan and Demonstrate Deduplication</h3>
+                            <p>Scans domain again; shows 0 duplicate URLs inserted, preserving repository integrity.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep9()">Test Deduplication</button>
+                    </div>
+
+                    <div class="demo-step-card ox-bracket" id="step-card-10">
+                        <div class="step-num">10</div>
+                        <div class="step-info">
+                            <h3>Demonstrate Multi-Domain Architecture</h3>
+                            <p>Adds second domain (e.g. python.org); demonstrates independent queues and stats.</p>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="demoStep10()">Multi-Domain Demo</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= MODAL: URL SUBMISSION HISTORY ================= -->
+        <div class="modal-overlay" id="history-modal" style="display: none;">
+            <div class="modal-card ox-bracket">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="ox-reg"></span>
+                        <h3 class="modal-title">URL Archival Audit History</h3>
+                    </div>
+                    <button class="btn-close" onclick="closeHistoryModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="url-detail-box" style="background: var(--ground-deep); border: 1px solid var(--hairline-2); padding: 0.85rem; margin-bottom: 1rem;">
+                        <div class="ox-micro" style="margin-bottom: 4px;">Normalized Canonical URL:</div>
+                        <div class="text-mono text-sm" id="modal-url-text" style="color: var(--ink-max); word-break: break-all;"></div>
+                        <div id="modal-wayback-avail" style="margin-top: 6px;"></div>
+                    </div>
+                    <div class="table-container mt-md">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Status</th>
+                                    <th>Archive URL</th>
+                                    <th>HTTP</th>
+                                    <th>Date</th>
+                                    <th>Error Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-history-tbody">
+                                <tr><td colspan="6">Loading history...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODAL: ENQUEUE CONFIGURATION ================= -->
+        <div class="modal-overlay" id="enqueue-modal" style="display: none;">
+            <div class="modal-card modal-sm ox-bracket">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="ox-reg"></span>
+                        <h3 class="modal-title">Configure Archival Submission Queue</h3>
+                    </div>
+                    <button class="btn-close" onclick="closeEnqueueModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="enqueue-domain-id">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label class="ox-micro">Target Domain</label>
+                        <div class="text-mono font-bold" id="enqueue-domain-name" style="font-size: 1.1rem; color: var(--ink-max); padding-top: 2px;"></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label class="ox-micro" style="display: block; margin-bottom: 6px;">Target Archival Services</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enq-service-wayback" checked>
+                                <span>Wayback Machine (Save Page Now)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enq-service-archive-today" checked>
+                                <span>Archive.today / Archive.is</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enq-service-ghostarchive" checked>
+                                <span>Ghostarchive (Public Archive)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label class="ox-micro" style="display: block; margin-bottom: 6px;">Archival Mode</label>
+                        <select id="enq-mode-select" style="width: 100%;">
+                            <option value="incremental" selected>Incremental (Unarchived URLs Only)</option>
+                            <option value="rearchive_changed">Re-archive Modified &amp; Unarchived (Smart Change Detection)</option>
+                            <option value="force_all">Force Re-archive All (Fresh Snapshot of Entire Domain)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 18px;">
+                        <label class="ox-micro" style="display: block; margin-bottom: 6px;">Queue Priority</label>
+                        <select id="enq-priority-select" style="width: 100%;">
+                            <option value="0" selected>Normal Priority (0)</option>
+                            <option value="5">High Priority (5)</option>
+                            <option value="10">Urgent Priority (10)</option>
+                        </select>
+                    </div>
+                    <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="closeEnqueueModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="submitEnqueueModal()">Start Queueing</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

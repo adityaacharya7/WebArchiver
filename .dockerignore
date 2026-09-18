@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.git
+.gitignore
+.pytest_cache/
+venv/
+.env
+*.pdf
+*.docx
+scratch/
+scratch_wb.html
+data/*.db-wal
+data/*.db-shm

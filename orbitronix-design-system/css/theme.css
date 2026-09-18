@@ -1,0 +1,541 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ORBITRONIX — MONOCHROME MAXIMALIST SYSTEM
+   A single warm-neutral ink ramp. Risk is encoded by LUMINANCE, WEIGHT and
+   TEXTURE — never by hue. Density, rules, grain and marginalia supply the
+   maximalism; the palette stays silent.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Ink ramp (dark ground). Warm neutral, biased off pure grey ───────── */
+  --color-ink-000: #000000;
+  --color-ink-050: #070706;
+  --color-ink-100: #0c0c0b;
+  --color-ink-150: #111110;
+  --color-ink-200: #161614;
+  --color-ink-250: #1c1c1a;
+  --color-ink-300: #232320;
+  --color-ink-400: #2e2e2a;
+  --color-ink-500: #3d3d38;
+  --color-ink-600: #5a5a53;
+  --color-ink-700: #85857c;
+  --color-ink-800: #b4b4a9;
+  --color-ink-900: #e4e4db;
+  --color-ink-950: #f7f7f0;
+
+  /* ── Paper ramp — retained for print/export surfaces only ──────────── */
+  --color-paper-950: #ffffff;
+  --color-paper-900: #f7f7f4;
+  --color-paper-800: #eeeeea;
+  --color-paper-700: #e2e2dc;
+  --color-paper-600: #cfcfc7;
+  --color-paper-500: #a9a9a0;
+  --color-paper-400: #78786f;
+  --color-paper-300: #4e4e47;
+  --color-paper-200: #2b2b26;
+  --color-paper-100: #131310;
+
+  /* ── Legacy aliases (kept so existing imports never break) ────────────── */
+  --color-midnight: #0c0c0b;
+  --color-steel: #161614;
+  --color-frost: #f7f7f0;
+  --color-ash: #85857c;
+  --color-whisper: #2e2e2a;
+  --color-electric: #e4e4db;
+  --color-critical: #f7f7f0;
+  --color-high: #b4b4a9;
+  --color-medium: #85857c;
+  --color-low: #5a5a53;
+
+  /* ── Type stack ───────────────────────────────────────────────────────── */
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: 'Archivo', 'DM Sans', system-ui, sans-serif;
+  --font-editorial: 'Instrument Serif', Georgia, serif;
+}
+
+/* ═══ Runtime tokens ═════════════════════════════════════════════════════
+   Single ink skin. The deck is an instrument, not a document — it is read in
+   a dark room beside a 3D scene, and a light ground fought the whole design.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --ground:      #0c0c0b;
+  --ground-deep: #070706;
+  --surface:     rgba(22, 22, 20, 0.72);
+  --surface-2:   rgba(28, 28, 26, 0.9);
+  --hairline:    rgba(133, 133, 124, 0.16);
+  --hairline-2:  rgba(133, 133, 124, 0.30);
+  --rule:        rgba(133, 133, 124, 0.42);
+  --ink-dim:     #5a5a53;
+  --ink-muted:   #85857c;
+  --ink-body:    #b4b4a9;
+  --ink-strong:  #e4e4db;
+  --ink-max:     #f7f7f0;
+  --signal:      #f7f7f0;
+  --signal-soft: rgba(247, 247, 240, 0.08);
+  --grain:       0.030;
+  --grid:        rgba(133, 133, 124, 0.055);
+  --vignette:    rgba(0, 0, 0, 0.55);
+  --invert-fg:   #070706;
+
+  /* ── Severity. The deck's only hue, reserved for collision risk. ────── */
+  --sev-critical:  #f2555a;
+  --sev-high:      #f5952f;
+  --sev-medium:    #e8c84a;
+  --sev-low:       #4fb477;
+  --sev-on-solid:  #0c0c0b;   /* text sitting on a solid severity fill */
+  --sev-rising:    #f2555a;   /* PoC trend climbing toward TCA */
+  --sev-falling:   #4fb477;   /* PoC trend decaying */
+}
+
+
+/* ═══ Ground ═════════════════════════════════════════════════════════════ */
+html, body, * { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink-body);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  font-feature-settings: 'tnum' 1, 'ss01' 1;
+  transition: background 320ms ease, color 320ms ease;
+}
+
+#root {
+  width: 100%; max-width: 100%; margin: 0;
+  text-align: left; border: none; min-height: 100svh;
+  position: relative; isolation: isolate;
+}
+
+/* Blueprint grid — the substrate everything sits on */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 128px 128px, 128px 128px, 16px 16px, 16px 16px;
+  mask-image: radial-gradient(ellipse 110% 80% at 50% 0%, #000 30%, transparent 88%);
+}
+
+/* Film grain — the single most important "expensive" cue in monochrome */
+body::after {
+  content: ''; position: fixed; inset: -50%; z-index: 9999; pointer-events: none;
+  opacity: var(--grain);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-drift 800ms steps(4) infinite;
+}
+@keyframes grain-drift {
+  0%,100% { transform: translate(0,0) }
+  25% { transform: translate(-2%, 1%) }
+  50% { transform: translate(1%, -2%) }
+  75% { transform: translate(2%, 2%) }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none }
+  .ox-sweep::after, .ox-pulse { animation: none !important }
+}
+
+/* ═══ Typography ═════════════════════════════════════════════════════════ */
+
+/* Oversized display numeral / heading */
+.ox-display {
+  font-family: 'Archivo', 'DM Sans', sans-serif;
+  font-weight: 200;
+  letter-spacing: -0.045em;
+  line-height: 0.88;
+  color: var(--ink-max);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Editorial serif — used sparingly for contrast against the grotesque */
+.ox-editorial {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.ox-editorial-i { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; }
+
+/* Micro label — wide-tracked uppercase, the connective tissue of the deck */
+.ox-micro {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; line-height: 1.1;
+  text-transform: uppercase; letter-spacing: 0.22em;
+  color: var(--ink-muted);
+}
+.ox-micro-lg { font-size: 10.5px; letter-spacing: 0.28em; }
+
+.ox-num { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+
+/* ═══ Surfaces ═══════════════════════════════════════════════════════════ */
+
+.ox-panel {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(14px);
+  transition: border-color 260ms ease, background 260ms ease;
+}
+.ox-panel:hover { border-color: var(--hairline-2); }
+
+/* Flight-instrument corner brackets */
+.ox-bracket::before,
+.ox-bracket::after {
+  content: ''; position: absolute; width: 9px; height: 9px; pointer-events: none;
+  border-color: var(--rule); opacity: 0.85;
+}
+.ox-bracket::before { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
+.ox-bracket::after  { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
+
+.ox-bracket-4 > .ox-c { position: absolute; width: 9px; height: 9px; border-color: var(--rule); pointer-events: none; }
+
+/* Inset "machined" plate */
+.ox-plate {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), inset 0 -1px 0 rgba(0,0,0,0.35);
+}
+
+/* ═══ Severity — hue AND texture, doubled up ═════════════════════════════
+   Colour makes the tier jump off a monochrome ground; the texture underneath
+   keeps it readable in greyscale, in print, and for anyone who cannot
+   separate red from green. Neither channel carries the meaning alone.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* CRITICAL — solid red. Loudest mark on the deck, and nothing competes. */
+.ox-t-critical {
+  background: var(--sev-critical);
+  color: var(--sev-on-solid);
+  border-color: var(--sev-critical);
+}
+/* HIGH — dense 45° hatch in amber */
+.ox-t-high {
+  background-color: color-mix(in srgb, var(--sev-high) 11%, transparent);
+  background-image: repeating-linear-gradient(45deg,
+    var(--sev-high) 0px, var(--sev-high) 1px, transparent 1px, transparent 4px);
+  border-color: var(--sev-high);
+  color: var(--sev-high);
+}
+/* MEDIUM — sparse dot field in yellow */
+.ox-t-medium {
+  background-color: color-mix(in srgb, var(--sev-medium) 8%, transparent);
+  background-image: radial-gradient(var(--sev-medium) 0.7px, transparent 0.7px);
+  background-size: 4px 4px;
+  border-color: color-mix(in srgb, var(--sev-medium) 55%, transparent);
+  color: var(--sev-medium);
+}
+/* LOW — quiet green. Present and legible, unmistakably not a problem. */
+.ox-t-low {
+  background-color: color-mix(in srgb, var(--sev-low) 8%, transparent);
+  border-color: color-mix(in srgb, var(--sev-low) 72%, transparent);
+  color: var(--sev-low);
+}
+/* NEUTRAL — for accent bands that are not severity readouts at all. */
+.ox-t-neutral {
+  background: transparent;
+  border-color: var(--hairline-2);
+  color: var(--ink-muted);
+}
+.ox-t-neutral-solid { background: var(--ink-muted); border-color: var(--ink-muted); }
+
+/* ── Operator decision ladder ─────────────────────────────────────────────
+   The four actions answer the four tiers, so they borrow the same hue ramp:
+   escalate is red, monitor amber, review yellow, dismiss green. Each button
+   sets --act; these rules do the rest, which keeps hover and selected states
+   consistent without four copies of the same class chain.
+   ──────────────────────────────────────────────────────────────────────── */
+.ox-act {
+  border: 1px solid color-mix(in srgb, var(--act) 40%, transparent);
+  background: color-mix(in srgb, var(--act) 8%, transparent);
+  color: var(--act);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.ox-act:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--act) 18%, transparent);
+  border-color: color-mix(in srgb, var(--act) 72%, transparent);
+}
+/* Selected reads as a committed decision: solid fill, nothing ambiguous. */
+.ox-act-on,
+.ox-act-on:hover:not(:disabled) {
+  background: var(--act);
+  border-color: var(--act);
+  color: var(--sev-on-solid);
+  font-weight: 700;
+}
+.ox-act:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Status chip — the state an action leaves behind, same ramp. */
+.ox-status {
+  border: 1px solid color-mix(in srgb, var(--act) 38%, transparent);
+  background: color-mix(in srgb, var(--act) 12%, transparent);
+  color: var(--act);
+}
+
+/* Severity as plain ink, for numerals and arrows that carry no chrome */
+.ox-sev-critical { color: var(--sev-critical); }
+.ox-sev-high     { color: var(--sev-high); }
+.ox-sev-medium   { color: var(--sev-medium); }
+.ox-sev-low      { color: var(--sev-low); }
+.ox-sev-rising   { color: var(--sev-rising); }
+.ox-sev-falling  { color: var(--sev-falling); }
+
+/* Standalone hatch fill for chart areas / bars */
+.ox-hatch {
+  background-image: repeating-linear-gradient(45deg,
+    currentColor 0px, currentColor 1px, transparent 1px, transparent 5px);
+}
+
+/* ═══ Ornament ═══════════════════════════════════════════════════════════ */
+
+/* Repeating glyph rule — fills horizontal space with texture, not silence */
+.ox-rule-glyph {
+  flex: 1; height: 7px; min-width: 12px;
+  background-image: repeating-linear-gradient(90deg,
+    var(--rule) 0px, var(--rule) 1px, transparent 1px, transparent 5px);
+  opacity: 0.55;
+}
+.ox-rule-solid { height: 1px; background: var(--hairline); }
+.ox-rule-heavy { height: 1px; background: var(--rule); }
+
+/* Vertical marginalia label down the left gutter */
+.ox-margin-note {
+  writing-mode: vertical-rl; text-orientation: mixed;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.34em; text-transform: uppercase;
+  color: var(--ink-dim); white-space: nowrap; user-select: none;
+}
+
+/* Registration crosshair */
+.ox-reg {
+  position: relative; width: 11px; height: 11px; flex: none; opacity: 0.6;
+}
+.ox-reg::before, .ox-reg::after {
+  content: ''; position: absolute; background: var(--rule);
+}
+.ox-reg::before { left: 50%; top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }
+.ox-reg::after  { top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-50%); }
+
+/* Live pulse — a ring, not a colour */
+.ox-pulse { position: relative; }
+.ox-pulse::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 999px;
+  border: 1px solid currentColor; opacity: 0; animation: ox-ping 2.4s ease-out infinite;
+}
+@keyframes ox-ping {
+  0% { transform: scale(0.6); opacity: 0.85 }
+  70%,100% { transform: scale(1.9); opacity: 0 }
+}
+
+/* Scanline sweep for the 3D deck */
+.ox-sweep { position: relative; overflow: hidden; }
+.ox-sweep::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 28%; top: -30%;
+  pointer-events: none; z-index: 5;
+  background: linear-gradient(180deg, transparent, var(--signal-soft), transparent);
+  animation: ox-scan 7s linear infinite;
+}
+@keyframes ox-scan { to { top: 110% } }
+
+/* Marquee ticker */
+.ox-marquee { display: flex; width: max-content; animation: ox-slide 46s linear infinite; }
+.ox-marquee:hover { animation-play-state: paused; }
+@keyframes ox-slide { to { transform: translateX(-50%) } }
+
+/* Stamped heading — offset ghost behind the type */
+.ox-stamp { position: relative; }
+.ox-stamp::before {
+  content: attr(data-ghost); position: absolute; left: 2px; top: 2px;
+  color: var(--hairline); z-index: -1; pointer-events: none; white-space: nowrap;
+}
+
+/* ═══ Controls ═══════════════════════════════════════════════════════════ */
+
+.ox-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+  padding: 7px 13px; border: 1px solid var(--hairline-2); color: var(--ink-muted);
+  background: transparent; cursor: pointer;
+  transition: all 180ms ease;
+}
+.ox-btn:hover { color: var(--ink-max); border-color: var(--rule); background: var(--signal-soft); }
+.ox-btn-on { background: var(--signal); color: var(--invert-fg); border-color: var(--signal); }
+.ox-btn-on:hover { background: var(--signal); color: var(--invert-fg); }
+
+.ox-focus:focus-visible { outline: 1px solid var(--signal); outline-offset: 2px; }
+
+/* ═══ Scrollbar ══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: var(--ground-deep); }
+::-webkit-scrollbar-thumb { background: var(--hairline-2); border: 2px solid var(--ground-deep); }
+::-webkit-scrollbar-thumb:hover { background: var(--rule); }
+::selection { background: var(--signal); color: var(--invert-fg); }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SENSOR ACQUISITION — page transition system
+
+   The deck changes page the way a sensor acquires a frame: a scan bar crosses
+   the viewport, the outgoing page is wiped ahead of it and the incoming one
+   uncovered behind it. The bar IS the seam between the two clips, which is
+   why every element here shares one duration and one easing curve.
+
+   Because the clip gates visibility by Y, plates and rules only need a short
+   settle of their own — the sweep supplies the vertical sequencing, and a
+   Y-derived animation-delay (set in Sweep.tsx) glues the two together.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --sweep-ms: 820ms;
+  --sweep-ease: cubic-bezier(0.62, 0.02, 0.24, 1);   /* settle: mechanical, no bounce */
+  --sweep-travel-ease: linear;                        /* bar + clip: constant rate */
+}
+
+/* Stage — outgoing layer is popped out of flow so page height never jumps */
+.ox-stage { position: relative; }
+
+/* ── The bar ─────────────────────────────────────────────────────────────
+   Three stacked parts: a bloom ahead of the leading edge, the hard 1px edge
+   itself, and a decaying wake behind it. */
+.ox-scanbar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 400;
+  height: 0; pointer-events: none;
+  will-change: transform;
+}
+.ox-scanbar::before {
+  /* Leading bloom, thrown DOWN-page ahead of the edge — the sensor lighting
+     what it is about to acquire. Trailing it instead left the newly revealed
+     strip immediately below the edge unlit. */
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 200px;
+  background:
+    linear-gradient(to bottom,
+      rgba(247,247,240,0.13) 0%,
+      rgba(247,247,240,0.04) 38%,
+      transparent 100%);
+}
+.ox-scanbar::after {            /* the hard edge */
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: var(--signal);
+  box-shadow: 0 0 14px 1px rgba(247,247,240,0.55), 0 0 44px 6px rgba(247,247,240,0.18);
+}
+/* Wake — a thin residue trailing the edge, fading as it goes */
+.ox-scanwake {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 399;
+  height: 0; pointer-events: none;
+}
+.ox-scanwake::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 240px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(247,247,240,0.055) 0px, rgba(247,247,240,0.055) 1px,
+    transparent 1px, transparent 4px);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  transform: translateY(-240px);
+}
+
+/* ── Elements settling as the seam passes them ──────────────────────────
+   animation-delay is written per element from its measured Y offset. */
+.ox-sweeping .ox-panel,
+.ox-sweeping [data-sweep='plate'] {
+  animation: ox-plate-settle 300ms var(--sweep-ease) both;
+}
+@keyframes ox-plate-settle {
+  from { opacity: 0.35; transform: scale(0.994) translateY(3px);
+         border-color: var(--rule) }
+  to   { opacity: 1; transform: none }
+}
+
+/* Corner brackets snap outward into position */
+.ox-sweeping .ox-bracket::before,
+.ox-sweeping .ox-bracket::after {
+  animation: ox-bracket-snap 260ms var(--sweep-ease) both;
+}
+@keyframes ox-bracket-snap {
+  from { opacity: 0; width: 26px; height: 26px }
+  to   { opacity: 0.85; width: 9px; height: 9px }
+}
+
+/* Rules draw left to right in the wake */
+.ox-sweeping .ox-rule-glyph,
+.ox-sweeping .ox-rule-solid,
+.ox-sweeping .ox-rule-heavy,
+.ox-sweeping [data-sweep='rule'] {
+  animation: ox-rule-draw 420ms var(--sweep-ease) both;
+  transform-origin: left center;
+}
+@keyframes ox-rule-draw {
+  from { transform: scaleX(0) }
+  to   { transform: scaleX(1) }
+}
+
+/* ═══ Ambient layer — opt-in, off by default ════════════════════════════
+   Everything below only runs when the operator turns it on. It is the layer
+   that makes the deck feel alive in a demo and tiring on a twelve-hour shift,
+   so it is a switch rather than a default.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Standing scanline drifting over the whole deck */
+[data-ambient='on'] body::before,
+[data-ambient='on'] #root::after {
+  content: '';
+}
+[data-ambient='on'] #root::after {
+  position: fixed; inset: 0; z-index: 300; pointer-events: none;
+  background: linear-gradient(to bottom,
+    transparent 0%, rgba(247,247,240,0.028) 48%,
+    rgba(247,247,240,0.05) 50%, rgba(247,247,240,0.028) 52%, transparent 100%);
+  background-size: 100% 42vh;
+  background-repeat: no-repeat;
+  animation: ox-ambient-scan 9s linear infinite;
+}
+@keyframes ox-ambient-scan {
+  from { background-position: 0 -45vh }
+  to   { background-position: 0 105vh }
+}
+
+/* The blueprint substrate breathes, very slowly */
+[data-ambient='on'] body::before {
+  animation: ox-grid-drift 42s ease-in-out infinite alternate;
+}
+@keyframes ox-grid-drift {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; opacity: 1 }
+  to   { background-position: 26px 18px, 26px 18px, 4px 2px, 4px 2px; opacity: 0.62 }
+}
+
+/* A highlight travels the top edge of a plate on hover */
+[data-ambient='on'] .ox-panel::after {
+  content: ''; position: absolute; left: 0; top: -1px; height: 1px; width: 0;
+  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+  opacity: 0; transition: none; pointer-events: none;
+}
+[data-ambient='on'] .ox-panel:hover::after {
+  animation: ox-edge-shimmer 900ms ease-out;
+}
+@keyframes ox-edge-shimmer {
+  from { width: 0; opacity: 0.9 }
+  to   { width: 100%; opacity: 0 }
+}
+
+/* Live indicators keep a slow idle breath */
+[data-ambient='on'] .ox-pulse::after { animation-duration: 1.7s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ox-scanbar, .ox-scanwake { display: none }
+  .ox-sweeping .ox-panel, .ox-sweeping .ox-bracket::before,
+  .ox-sweeping .ox-bracket::after, .ox-sweeping .ox-rule-glyph,
+  .ox-sweeping .ox-rule-solid, .ox-sweeping .ox-rule-heavy,
+  [data-ambient='on'] #root::after, [data-ambient='on'] body::before {
+    animation: none !important
+  }
+}
+
+/* Ambient toggle's own bar animation — lives outside [data-ambient] because
+   the control has to show its state whichever way the switch is set. */
+@keyframes ox-amb-bar {
+  0%, 100% { height: 40% }
+  50%      { height: 100% }
+}

@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    container_name: archive_submitter
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - DATABASE_URL=sqlite:////app/data/archiver.db
+      - DEMO_SIMULATION_MODE=true
