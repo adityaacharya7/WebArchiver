@@ -198,3 +198,29 @@ class Schedule(Base):
             "next_run_at": self.next_run_at.isoformat() if self.next_run_at else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    google_id = Column(String(128), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    picture = Column(Text, nullable=True)
+    role = Column(String(50), default="operator", nullable=False)
+    session_token = Column(String(128), unique=True, nullable=True, index=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    last_login_at = Column(DateTime, default=utc_now, nullable=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "google_id": self.google_id,
+            "email": self.email,
+            "name": self.name,
+            "picture": self.picture,
+            "role": self.role,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_login_at": self.last_login_at.isoformat() if self.last_login_at else None,
+        }

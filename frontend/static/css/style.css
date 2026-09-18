@@ -1279,3 +1279,134 @@ body::after {
         display: none;
     }
 }
+
+/* ================= AUTHENTICATION & GOOGLE SIGN-IN ================= */
+.auth-box {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.btn-google {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--ink-max, #ffffff);
+    padding: 7px 14px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    font-family: var(--font-body, 'DM Sans', sans-serif);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-google:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+    transform: translateY(-1px);
+}
+
+.btn-google-large {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #ffffff;
+    color: #1f1f1f;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 10px 18px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    font-family: var(--font-body, 'DM Sans', sans-serif);
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.btn-google-large:hover {
+    background: #f8f9fa;
+    box-shadow: 0 4px 14px rgba(66, 133, 244, 0.35);
+    transform: translateY(-1px);
+}
+
+.user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    padding: 4px 8px 4px 6px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+}
+
+.user-chip:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--brand-accent, #6366f1);
+}
+
+.user-chip-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--brand-accent, #6366f1);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+.user-chip-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    text-align: left;
+}
+
+.user-chip-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-max, #ffffff);
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-chip-role {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.62rem;
+    color: var(--brand-accent, #818cf8);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.user-chip-logout {
+    background: transparent;
+    border: none;
+    color: var(--ink-muted, #94a3b8);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.user-chip-logout:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.demo-auth-box {
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.15));
+    border-radius: 6px;
+    margin-top: 12px;
+}

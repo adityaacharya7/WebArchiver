@@ -58,6 +58,12 @@ class Settings(BaseSettings):
     PLAYWRIGHT_HEADLESS: bool = True
     PLAYWRIGHT_TIMEOUT_MS: int = 30000
 
+    # Google OAuth 2.0 & Session Security
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    SESSION_SECRET_KEY: str = "orbitronix-super-secure-archival-session-secret-key-32b"
+    AUTH_REDIRECT_URI: str | None = None  # Auto-computed if None
+
     model_config = {
         "env_file": ".env",
         "extra": "allow",

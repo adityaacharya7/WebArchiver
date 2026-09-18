@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initApp() {
+    initAuth();
     loadStats();
     loadDomains();
     loadQueueItems();
@@ -980,4 +981,138 @@ function escapeHtml(str) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+/* ================= Google Authentication & User Profile ================= */
+let currentUser = null;
+let authConfig = null;
+
+async function initAuth() {
+    checkUrlAuthParams();
+    await loadAuthConfig();
+    await checkAuthStatus();
+}
+
+function checkUrlAuthParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("auth_success")) {
+        showToast("Google Authentication successful! Welcome to Mission Control.", "success");
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get("auth_error")) {
+        const err = urlParams.get("auth_error");
+        if (err === "google_credentials_missing") {
+            showToast("Google OAuth credentials missing in .env. Use One-Click Demo Mode below!", "info");
+            openAuthModal();
+        } else {
+            showToast(`Authentication failed: ${err}`, "failed");
+        }
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+async function loadAuthConfig() {
+    try {
+        const res = await fetch("/api/auth/config");
+        if (res.ok) {
+            authConfig = await res.json();
+            const statusEl = document.getElementById("google-config-status");
+            const actionBtn = document.getElementById("btn-google-login-action");
+            if (statusEl) {
+                if (authConfig.google_enabled) {
+                    statusEl.innerHTML = '<span style="color: #10b981;">● Google Cloud OAuth 2.0 Armed &amp; Active</span>';
+                } else {
+                    statusEl.innerHTML = '<span>⚙️ Google keys not set in .env. Use <strong>Demo Mode</strong> or configure GOOGLE_CLIENT_ID</span>';
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Could not load auth configuration:", e);
+    }
+}
+
+async function checkAuthStatus() {
+    try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+            const data = await res.json();
+            if (data.authenticated && data.user) {
+                currentUser = data.user;
+                updateAuthUI(currentUser);
+                return;
+            }
+        }
+    } catch (e) {
+        // Unauthenticated visitor
+    }
+    currentUser = null;
+    updateAuthUI(null);
+}
+
+function updateAuthUI(user) {
+    const loginBtn = document.getElementById("btn-google-auth");
+    const profileChip = document.getElementById("user-profile-chip");
+
+    if (!loginBtn || !profileChip) return;
+
+    if (user) {
+        loginBtn.style.display = "none";
+        profileChip.style.display = "flex";
+
+        const avatarImg = document.getElementById("user-chip-avatar");
+        const nameEl = document.getElementById("user-chip-name");
+        const roleEl = document.getElementById("user-chip-role");
+
+        if (avatarImg) {
+            avatarImg.src = user.picture || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+        }
+        if (nameEl) nameEl.textContent = user.name || user.email || "Commander";
+        if (roleEl) roleEl.textContent = (user.role || "OPERATOR").toUpperCase();
+    } else {
+        loginBtn.style.display = "inline-flex";
+        profileChip.style.display = "none";
+    }
+}
+
+function handleAuthClick() {
+    openAuthModal();
+}
+
+function openAuthModal() {
+    const modal = document.getElementById("auth-modal");
+    if (modal) modal.style.display = "flex";
+}
+
+function closeAuthModal() {
+    const modal = document.getElementById("auth-modal");
+    if (modal) modal.style.display = "none";
+}
+
+async function loginDemoUser() {
+    try {
+        const res = await fetch("/api/auth/demo-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error("Demo login failed");
+        const data = await res.json();
+        currentUser = data.user;
+        updateAuthUI(currentUser);
+        closeAuthModal();
+        showToast(`Authenticated as ${currentUser.name} (${currentUser.role})`, "success");
+    } catch (err) {
+        showToast("Error during demo authentication: " + err.message, "failed");
+    }
+}
+
+async function logoutUser() {
+    try {
+        const res = await fetch("/api/auth/logout", { method: "POST" });
+        if (res.ok) {
+            currentUser = null;
+            updateAuthUI(null);
+            showToast("Successfully signed out.", "info");
+        }
+    } catch (err) {
+        showToast("Logout error: " + err.message, "failed");
+    }
 }

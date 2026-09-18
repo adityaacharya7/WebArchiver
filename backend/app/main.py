@@ -15,6 +15,7 @@ from backend.app.queue.queue_manager import QueueManager
 from backend.app.queue.worker_pool import worker_pool
 from backend.app.scheduler.scheduler_service import scheduler_service
 from backend.app.routes.api import router as api_router
+from backend.app.routes.auth import router as auth_router
 
 # Setup logging
 logging.basicConfig(
@@ -82,6 +83,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Include API routes
 app.include_router(api_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

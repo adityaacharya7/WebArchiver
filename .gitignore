@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.pytest_cache/
+venv/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+scratch/
+scratch_wb.html
